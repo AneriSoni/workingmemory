@@ -635,9 +635,9 @@ func (ss *Sim) ApplyReward(train bool) {
 
 	out.UnitVals(&ss.TmpVals,"ActM") //writes ActM value from the layer
 	outdecode := pc.Decode(ss.TmpVals) //this decodes the slide into a single float32
-	var outdecodei int = int(outdecode)
-	//fmt.Printf("outdecode: %v",outdecode)
-	//fmt.Printf("outdecodei: %v",outdecodei)
+	var outdecodei int = int(math.Round(float64(outdecode)))
+	//fmt.Printf("ActM: %v",outdecode)
+	//fmt.Printf("ActMInteger: %v",outdecodei)
 	
 	//out := ss.Net.LayerByName("Output").(deep.DeepLayer).AsDeep()
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
@@ -645,9 +645,9 @@ func (ss *Sim) ApplyReward(train bool) {
 
 
 
-	//out.UnitVals(&ss.TmpVals2,"Act") //writes Act value from the layer
-	//outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
-	//fmt.Printf("outdecode: %v",outdecode2)
+	out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
+	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
+	//fmt.Printf("Targ: %v",outdecode2)
 
 
 	en.SetReward(outdecodei)
@@ -1134,6 +1134,10 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	outdecode := pc.Decode(ss.TmpVals)
 	dt.SetCellFloat("OutDecode", row, float64(outdecode))
 
+	out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
+	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
+	dt.SetCellFloat("OutTarget", row, float64(outdecode2))
+
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
 }
@@ -1165,6 +1169,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 	sch = append(sch, etable.Schema{
 
 	{"OutDecode", etensor.FLOAT64, nil, nil}, //adds outdecode value to table
+	{"OutTarget", etensor.FLOAT64, nil, nil}, //adds target value to table
 }...)
 	dt.SetFromSchema(sch, nt)
 }
