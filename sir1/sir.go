@@ -387,7 +387,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.NoRewVal = 0
 	ss.TestEnv.Validate()
 	ss.TestEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
-	ss.TestEnv.Trial.Max = 20       // good amount for testing
+	ss.TestEnv.Trial.Max = 500     // good amount for testing
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
@@ -645,8 +645,8 @@ func (ss *Sim) ApplyReward(train bool) {
 
 
 
-	out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
-	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
+	//out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
+	//outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	//fmt.Printf("Targ: %v",outdecode2)
 
 
