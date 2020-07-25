@@ -387,7 +387,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.NoRewVal = 0
 	ss.TestEnv.Validate()
 	ss.TestEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
-	ss.TestEnv.Trial.Max = 500     // good amount for testing
+	ss.TestEnv.Trial.Max = 1000     // good amount for testing
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
