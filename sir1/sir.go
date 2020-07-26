@@ -255,7 +255,11 @@ type Sim struct {
 	InOneTsr    *etensor.Float32  `view:"-" desc:"for holding layer values"`
 	InTwoTsr    *etensor.Float32  `view:"-" desc:"for holding layer values"`
 	TmpVals      []float32         `view:"-" desc:"for holding decoded layer values"`
-	TmpVals2      []float32        `view:"-" desc:"for holding decoded layer values"`
+	TmpVals2     []float32        `view:"-" desc:"for holding decoded layer values"`
+
+	pop_min     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`  
+	pop_max     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
+	pop_sigma   float32           `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range"`
 
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
@@ -364,7 +368,7 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxRuns = 10
 	}
 	if ss.MaxEpcs == 0 { // allow user override
-		ss.MaxEpcs = 100
+		ss.MaxEpcs = 200
 		ss.NZeroStop = 5
 	}
 	if ss.MaxTrls == 0 { // allow user override
@@ -391,6 +395,10 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
+	
+	ss.pop_min = -0.01
+	ss.pop_max = 3.01
+	ss.pop_sigma = 0.15
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -576,7 +584,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	pc:= popcode.OneD{}
 	pc.Defaults()
 	
-	pc.SetRange(0,3,0.1)
+	pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma)
 
 	lays := []string{"Input", "CtrlInput","Output"}
 	for _, lnm := range lays {
@@ -631,7 +639,7 @@ func (ss *Sim) ApplyReward(train bool) {
 	pc := popcode.OneD{}//previously defined pc does not work here
 
 	pc.Defaults()
-	pc.SetRange(0,3,0.1) //does not say to add these two - lets see if it works
+	pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma) //does not say to add these two - lets see if it works
 
 	out.UnitVals(&ss.TmpVals,"ActM") //writes ActM value from the layer
 	outdecode := pc.Decode(ss.TmpVals) //this decodes the slide into a single float32
@@ -1103,7 +1111,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	pc := popcode.OneD{}//previously defined pc does not work here
 	pc.Defaults()
-	pc.SetRange(0,3,0.1) //does not say to add these two
+	pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma) //does not say to add these two
 
 	trl := ss.TestEnv.Trial.Cur
 	row := trl

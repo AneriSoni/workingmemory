@@ -152,7 +152,7 @@ func (ev *SIREnv) SetState() {
 func (ev *SIREnv) SetReward(netout int) bool {
 	cor := ev.Stim // already correct
 	rw := netout == cor
-	fmt.Printf("cor is %v",cor)
+	//fmt.Printf("cor is %v",cor)
 	if rw {
 		ev.Reward.Values[0] = float64(ev.RewVal)
 	} else {
