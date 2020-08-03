@@ -254,8 +254,10 @@ type Sim struct {
 	
 	InOneTsr    *etensor.Float32  `view:"-" desc:"for holding layer values"`
 	InTwoTsr    *etensor.Float32  `view:"-" desc:"for holding layer values"`
+
 	TmpVals      []float32         `view:"-" desc:"for holding decoded layer values"`
 	TmpVals2     []float32        `view:"-" desc:"for holding decoded layer values"`
+	TmpVals3     []float32         `view:"-" desc:"for holding decoded layer values"`
 
 	pop_min     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`  
 	pop_max     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
@@ -368,8 +370,8 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxRuns = 10
 	}
 	if ss.MaxEpcs == 0 { // allow user override
-		ss.MaxEpcs = 200
-		ss.NZeroStop = 5
+		ss.MaxEpcs = 300
+		ss.NZeroStop = 10
 	}
 	if ss.MaxTrls == 0 { // allow user override
 		ss.MaxTrls = 100
@@ -398,7 +400,7 @@ func (ss *Sim) ConfigEnv() {
 	
 	ss.pop_min = -0.01
 	ss.pop_max = 3.01
-	ss.pop_sigma = 0.15
+	ss.pop_sigma = 0.25
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -621,6 +623,22 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		//}
 	}
 }
+func sumarray(array []float32) float32 {
+	resultsum := float32(0)
+	for _,v := range array {
+		resultsum+=float32(math.Abs(float64(v)))
+	}
+
+	return resultsum
+}
+func diff(a, b []float32) []float32 {
+	result := []float32{}
+	for x,_ := range b {
+		result = append(result,a[x]-b[x])
+	}
+	return result
+}
+
 
 // ApplyReward computes reward based on network output and applies it -- call
 // at start of 3rd quarter (plus phase)
@@ -642,23 +660,24 @@ func (ss *Sim) ApplyReward(train bool) {
 	pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma) //does not say to add these two - lets see if it works
 
 	out.UnitVals(&ss.TmpVals,"ActM") //writes ActM value from the layer
-	outdecode := pc.Decode(ss.TmpVals) //this decodes the slide into a single float32
-	var outdecodei int = int(math.Round(float64(outdecode)))
-	//fmt.Printf("ActM: %v",outdecode)
-	//fmt.Printf("ActMInteger: %v",outdecodei)
 	
+	//needed for the older reward version (based on decoded output)
+	//outdecode := pc.Decode(ss.TmpVals) //this decodes the slide into a single float32
+	//var outdecodei int = int(math.Round(float64(outdecode))) 
+	
+	//sir original work (discrete inputs)
 	//out := ss.Net.LayerByName("Output").(deep.DeepLayer).AsDeep()
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
 	//mxi := out.Pools[0].ActM.MaxIdx
 
-
-
-	//out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
+	//TARGET
+	out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
 	//outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	//fmt.Printf("Targ: %v",outdecode2)
-
-
-	en.SetReward(outdecodei)
+	
+	
+	//en.SetReward(outdecodei) //old reward rule (based on decoded value)
+	en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2,ss.TmpVals)))) //based on difference + threshold (in sir_env)
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(deep.DeepLayer).AsDeep()
 	ly.ApplyExt1DTsr(pats)
@@ -1142,7 +1161,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	outdecode := pc.Decode(ss.TmpVals)
 	dt.SetCellFloat("OutDecode", row, float64(outdecode))
 
-	out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
+	out.UnitVals(&ss.TmpVals2,"Targ") //writes Targ value from the layer
 	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	dt.SetCellFloat("OutTarget", row, float64(outdecode2))
 

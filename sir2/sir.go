@@ -149,6 +149,9 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.Learn.Lrate": "0.04",
 					"Prjn.WtInit.Var":  "0.1",
+					"Prjn.Trace.GateNoGoPosLR": "1.0", // .1 default -- 1.0 seems potentially even better; added from Michael
+					"Prjn.Trace.NotGatedLR":    "0.7", // 0.7 default; added from Michael
+					"Prjn.Trace.Decay":         "1.0", // 1 default; ; added from Michael
 				}},
 			{Sel: "MatrixLayer", Desc: "exploring these options",
 				Params: params.Params{
@@ -166,13 +169,15 @@ var ParamSets = params.Sets{
 			{Sel: "#GPiThal", Desc: "defaults also set automatically by layer but included here just to be sure",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":     "1.8",
-					"Layer.Inhib.Layer.FB":     "0.5",
+					//"Layer.Inhib.Layer.FB":     "0.5",
+					"Layer.Inhib.Layer.FB":     "1", //added from Michael
 					"Layer.Inhib.Pool.On":      "false",
 					"Layer.Inhib.ActAvg.Init":  ".2",
 					"Layer.Inhib.ActAvg.Fixed": "true",
 					"Layer.Act.Dt.GTau":        "3",
 					"Layer.Gate.NoGo":          "1",
-					"Layer.Gate.Thr":           "0.2",
+					//"Layer.Gate.Thr":           "0.2",
+					"Layer.Gate.Thr":           "0.25", //added from Michael
 				}},
 			{Sel: "#GPeNoGo", Desc: "GPe is a regular layer -- needs special params",
 				Params: params.Params{
