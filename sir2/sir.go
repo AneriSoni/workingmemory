@@ -8,7 +8,7 @@ sir illustrates the dynamic gating of information into PFC active maintenance, b
 package main
 
 import (
-	"flag"
+	//"flag"
 	"fmt"
 	"log"
 	"math"
@@ -40,6 +40,7 @@ import (
 	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"
 	"github.com/emer/emergent/popcode"
+	flag "github.com/spf13/pflag"
 )
 
 func main() {
@@ -266,6 +267,7 @@ type Sim struct {
 	pop_max     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
 	pop_sigma   float32           `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range"`
 
+	RewThreshold float64          `desc: "threshold for reward function"`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -304,6 +306,7 @@ type Sim struct {
 	RunPlot      *eplot.Plot2D               `view:"-" desc:"the run plot"`
 	TrnEpcFile   *os.File                    `view:"-" desc:"log file"`
 	RunFile      *os.File                    `view:"-" desc:"log file"`
+	TstTrlFile   *os.File                    `view: "-" desc: "log file"`
 	ValsTsrs     map[string]*etensor.Float32 `view:"-" desc:"for holding layer values"`
 	SaveWts      bool                        `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
 	NoGui        bool                        `view:"-" desc:"if true, runing in no GUI mode"`
@@ -362,10 +365,10 @@ func (ss *Sim) Config() {
 
 func (ss *Sim) ConfigInputTsrs() {
 	if ss.InOneTsr == nil {
-		ss.InOneTsr = etensor.NewFloat32([]int{1,10},nil,nil)
+		ss.InOneTsr = etensor.NewFloat32([]int{1,20},nil,nil)
 	}
 	if ss.InTwoTsr == nil {
-		ss.InTwoTsr = etensor.NewFloat32([]int{1,10},nil,nil)
+		ss.InTwoTsr = etensor.NewFloat32([]int{1,20},nil,nil)
 	}
 }
 func (ss *Sim) ConfigEnv() {
@@ -396,14 +399,16 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.NoRewVal = 0
 	ss.TestEnv.Validate()
 	ss.TestEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
-	ss.TestEnv.Trial.Max = 1000     // good amount for testing
+	ss.TestEnv.Trial.Max = 500    // good amount for testing
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
 	
-	ss.pop_min = -0.01
-	ss.pop_max = 3.01
-	ss.pop_sigma = 0.005
+	ss.pop_min = -0.2
+	ss.pop_max = 3.2
+	ss.pop_sigma = 0.15
+
+	ss.RewThreshold = 1
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -412,9 +417,9 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	snc := da.(*pbwm.RWDaLayer)
 	snc.SetName("SNc")
 
-	inp := net.AddLayer2D("Input", 1, 10, emer.Input)
+	inp := net.AddLayer2D("Input", 1, 20, emer.Input)
 	ctrl := net.AddLayer2D("CtrlInput", 1, 5, emer.Input)
-	out := net.AddLayer2D("Output", 1, 10, emer.Target)
+	out := net.AddLayer2D("Output", 1, 20, emer.Target)
 	hid := net.AddLayer2D("Hidden", 7, 7, emer.Hidden)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
@@ -422,7 +427,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	hid.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "CtrlInput", XAlign: relpos.Left, Space: 2})
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
-	mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 2, 2, 2, 1, 5, 1, 10)
+	mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 2, 2, 2, 1, 5, 1, 20)
 	
 	_ = gpe
 	_ = gpi
@@ -431,7 +436,11 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	_ = pfcOut
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Rew", YAlign: relpos.Front, Space: 14})
-
+	pfcMnt.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Output",YAlign: relpos.Front, Space: 2})
+	
+	gpe.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "MatrixNoGo",YAlign: relpos.Front, Space: 14})
+	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "MatrixGo",YAlign: relpos.Front, Space: 14})
+	
 	full := prjn.NewFull()
 	fmin := prjn.NewRect()
 	fmin.Size.Set(1, 1)
@@ -457,7 +466,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.BidirConnectLayers(hid, out, full)
 	pj = net.ConnectLayers(pfcOutD, hid, full, emer.Forward)
 	pj.SetClass("FmPFCOutD")
-	pj = net.ConnectLayers(pfcOutD, out, full, emer.Forward)
+	//pj = net.ConnectLayers(pfcOutD, out, full, emer.Forward)
+	pj = net.ConnectLayers(pfcOutD, out, fmin, emer.Forward)
 	pj.SetClass("FmPFCOutD")
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
@@ -578,7 +588,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	}
 }
 
-// ApplyInputs applies input patterns from given envirbonment.
+// ApplyInputs applies input patterns from given environment.
 // It is good practice to have this be a separate method with appropriate
 // args so that it can be used for various different contexts
 // (training, testing, etc).
@@ -602,7 +612,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		if lnm == "Input" {
 			v := float32(pats.FloatVal1D(0))
 			if v != -999 {
-				pc.Encode(&ss.InOneTsr.Values,v,10)
+				pc.Encode(&ss.InOneTsr.Values,v,20)
 				ly.ApplyExt(ss.InOneTsr)
 			}
 			//fmt.Printf("pats is %v",pats)
@@ -614,7 +624,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		}
 		if lnm == "Output" {
 			v := float32(pats.FloatVal1D(0))
-			pc.Encode(&ss.InTwoTsr.Values,v,10)
+			pc.Encode(&ss.InTwoTsr.Values,v,20)
 			ly.ApplyExt(ss.InTwoTsr) 
 	
 		}
@@ -625,6 +635,21 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		//	ly.ApplyExt(pats)
 		//}
 	}
+}
+func sumarray(array []float32) float32 {
+	resultsum := float32(0)
+	for _,v := range array {
+		resultsum+=float32(math.Abs(float64(v)))
+	}
+
+	return resultsum
+}
+func diff(a, b []float32) []float32 {
+	result := []float32{}
+	for x,_ := range b {
+		result = append(result,a[x]-b[x])
+	}
+	return result
 }
 
 // ApplyReward computes reward based on network output and applies it -- call
@@ -647,23 +672,25 @@ func (ss *Sim) ApplyReward(train bool) {
 	pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma) //does not say to add these two - lets see if it works
 
 	out.UnitVals(&ss.TmpVals,"ActM") //writes ActM value from the layer
-	outdecode := pc.Decode(ss.TmpVals) //this decodes the slide into a single float32
-	var outdecodei int = int(math.Round(float64(outdecode)))
-	//fmt.Printf("ActM: %v",outdecode)
-	//fmt.Printf("ActMInteger: %v",outdecodei)
+
+	//needed for the older reward version (based on decoded output)
+	//outdecode := pc.Decode(ss.TmpVals) //this decodes the slide into a single float32
+	//var outdecodei int = int(math.Round(float64(outdecode)))
 	
+	//sir original work (discrete inputs)
 	//out := ss.Net.LayerByName("Output").(deep.DeepLayer).AsDeep()
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
 	//mxi := out.Pools[0].ActM.MaxIdx
 
 
-
-	//out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
+	//TARGET
+	out.UnitVals(&ss.TmpVals2,"Targ") //writes Targ value from the layer
 	//outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	//fmt.Printf("Targ: %v",outdecode2)
 
 
-	en.SetReward(outdecodei)
+	//en.SetReward(outdecodei)
+	en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2,ss.TmpVals))),ss.RewThreshold) //based on difference + threshold (in sir_env)
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(deep.DeepLayer).AsDeep()
 	ly.ApplyExt1DTsr(pats)
@@ -880,13 +907,26 @@ func (ss *Sim) TestAll() {
 			break
 		}
 	}
+
 }
 
 // RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
 func (ss *Sim) RunTestAll() {
+	var err error
+	fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/analysis/TestData/sir2/optimize_threshold"+ss.RunName()+".csv"
+	ss.TstTrlFile, err = os.Create(fnm)
+
 	ss.StopNow = false
 	ss.TestAll()
 	ss.Stopped()
+
+	if err != nil {
+		log.Println(err)
+		ss.TstTrlFile = nil
+	} else {
+		fmt.Printf("Saving testtrial log to: %v\n", fnm)
+		defer ss.TstTrlFile.Close()
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -1054,6 +1094,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TrnEpcPlot.GoUpdate()
+
 	if ss.TrnEpcFile != nil {
 		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
 			dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
@@ -1153,6 +1194,16 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
+
+	if ss.TstTrlFile != nil {
+		if ss.TestEnv.Trial.Cur == 0 {
+			dt.WriteCSVHeaders(ss.TstTrlFile, etable.Tab)
+		}
+		dt.WriteCSVRow(ss.TstTrlFile, row, etable.Tab)
+	}
+
+
+
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
@@ -1610,11 +1661,12 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
-	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
+	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do (note that MaxEpcs is in paramset)")
+	flag.Float32Var(&ss.pop_sigma,"sigma", 0.15,"sigma")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
-	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
-	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
+	flag.BoolVar(&saveEpcLog, "epclog", false, "if true, save train epoch log to file")
+	flag.BoolVar(&saveRunLog, "runlog", false, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
 	flag.Parse()
 	ss.Init()
@@ -1653,6 +1705,31 @@ func (ss *Sim) CmdArgs() {
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
 	}
+	
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
-	ss.Train()
+	fmt.Printf("sigma is %v", ss.pop_sigma)
+
+	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
+	models := []int{0, 1, 2, 3, 4}
+	
+	for _,w := range RewThresholds {
+		
+		ss.RewThreshold = w
+		for _,v := range models {
+
+			//fmt.Printf("model %v", v)
+			ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+			fmt.Printf(ss.Tag)
+
+			ss.TrainRun()
+			ss.RunTestAll()
+
+		}
+	}
+
+	//ss.Train()
+	//ss.TrainRun()
+	//fmt.Printf("sigma %v",ss.pop_sigma)
+	//fmt.Printf("Running Test All")
+	//ss.RunTestAll()
 }

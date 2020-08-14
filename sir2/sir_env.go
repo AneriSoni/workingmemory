@@ -164,6 +164,19 @@ func (ev *SIREnv) SetReward(netout int) bool {
 	return rw
 }
 
+func (ev *SIREnv) SetRewardThres(netout float64, threshold float64) bool {
+	//cor := ev.Stim // already correct
+	//threshold := float64(1)
+	rw := netout <= threshold
+	if rw {
+		ev.Reward.Values[0] = float64(ev.RewVal)
+	} else {
+		ev.Reward.Values[0] = float64(ev.NoRewVal)
+	}
+	return rw
+}
+
+
 // Step the SIR task
 //func (ev *SIREnv) StepSIR() {
 //	for {

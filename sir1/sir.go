@@ -671,7 +671,7 @@ func (ss *Sim) ApplyReward(train bool) {
 	//mxi := out.Pools[0].ActM.MaxIdx
 
 	//TARGET
-	out.UnitVals(&ss.TmpVals2,"Targ") //writes Act value from the layer
+	out.UnitVals(&ss.TmpVals2,"Targ") //writes Targ value from the layer
 	//outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	//fmt.Printf("Targ: %v",outdecode2)
 	
@@ -1167,6 +1167,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
+	
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {

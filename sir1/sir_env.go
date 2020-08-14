@@ -163,7 +163,7 @@ func (ev *SIREnv) SetReward(netout int) bool {
 
 func (ev *SIREnv) SetRewardThres(netout float64) bool {
 	//cor := ev.Stim // already correct
-	threshold := float64(3.4)
+	threshold := float64(1)
 	rw := netout <= threshold
 	if rw {
 		ev.Reward.Values[0] = float64(ev.RewVal)
