@@ -288,6 +288,10 @@ type Sim struct {
 	FirstZero     int     `inactive:"+" desc:"epoch at when SSE first went to zero"`
 	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero SSE"`
 
+	Lesion        string    `inactive:"+" desc:"what type of lesion: ex) PFC, Hidden, None, PFCHidden"`
+	LesionProp    float64   `inactive:"+" desc:"proportion of test trials to have a lesion"`
+	LesionApplied string      `inactive:"+" desc:"if lesion is actually applied"`
+
 	// internal state - view:"-"
 	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
 	SumAbsDA     float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -408,7 +412,11 @@ func (ss *Sim) ConfigEnv() {
 	ss.pop_max = 3.2
 	ss.pop_sigma = 0.15
 
-	ss.RewThreshold = 1
+	ss.RewThreshold = 2
+	
+	ss.Lesion = "None"
+	ss.LesionProp = 0
+	ss.LesionApplied = "no"
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -876,8 +884,34 @@ func (ss *Sim) SaveWeights(filename gi.FileName) {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Testing
 
+func (ss *Sim) UnLesionNet(net *pbwm.Network) {
+	net.LayersSetOff(false)
+	net.UnLesionNeurons()
+	net.InitActs()
+}
+
 // TestTrial runs one trial of testing -- always sequentially presented inputs
 func (ss *Sim) TestTrial(returnOnChg bool) {
+	
+	if ss.Lesion != "None" {
+		comp := rand.Float64()
+		if comp < ss.LesionProp {
+			ss.LesionApplied = "yes"
+	
+			if ss.Lesion == "PFC" {
+				ss.Net.LayerByName("PFCoutD").SetOff(true)
+			}
+			if ss.Lesion == "Hidden" {
+				ss.Net.LayerByName("Hidden").SetOff(true)
+			}
+			if ss.Lesion == "PFCHidden" {
+				ss.Net.LayerByName("PFCoutD").SetOff(true)
+				ss.Net.LayerByName("Hidden").SetOff(true)
+			}
+		}
+	
+	
+	}
 	ss.TestEnv.Step()
 
 	// Query counters FIRST
@@ -895,6 +929,11 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.AlphaCyc(false)   // !train
 	ss.TrialStats(false) // !accumulate
 	ss.LogTstTrl(ss.TstTrlLog)
+	if ss.LesionApplied == "yes"{
+		ss.UnLesionNet(ss.Net)
+		ss.LesionApplied = "no"
+	}
+	
 }
 
 // TestAll runs through the full set of testing items
@@ -913,7 +952,8 @@ func (ss *Sim) TestAll() {
 // RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
 func (ss *Sim) RunTestAll() {
 	var err error
-	fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/analysis/TestData/sir2/optimize_threshold"+ss.RunName()+".csv"
+	fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/analysis/TestData/sir2/Lesions/PropLesions/Sig0.15_Trial2/RandomStimuli/"+ss.RunName()+".csv"
+	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/analysis/TestData/sir2/Lesions/"+ss.RunName()+".csv"
 	ss.TstTrlFile, err = os.Create(fnm)
 
 	ss.StopNow = false
@@ -1192,6 +1232,10 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	dt.SetCellFloat("OutTarget", row, float64(outdecode2))
 
+	dt.SetCellString("Lesion", row, ss.Lesion)
+	dt.SetCellFloat("LesionProp",row,ss.LesionProp)
+	dt.SetCellString("LesionApplied",row,ss.LesionApplied)
+
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
 
@@ -1234,6 +1278,9 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 
 	{"OutDecode", etensor.FLOAT64, nil, nil}, //adds outdecode value to table
 	{"OutTarget", etensor.FLOAT64, nil, nil}, //adds target value to table
+	{"Lesion", etensor.STRING,nil, nil},//adds lesion type
+	{"LesionProp", etensor.FLOAT64, nil, nil}, //adds prop of trials with lesion
+	{"LesionApplied", etensor.STRING, nil, nil}, //add if lesion was actually applied in that test trial
 }...)
 	dt.SetFromSchema(sch, nt)
 }
@@ -1668,6 +1715,8 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&saveEpcLog, "epclog", false, "if true, save train epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", false, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
+	flag.StringVar(&ss.Lesion, "Lesion","None", "lesion type")
+	flag.Float64Var(&ss.LesionProp, "LesionProp",0,"proportion of test trials with lesion")
 	flag.Parse()
 	ss.Init()
 
@@ -1707,25 +1756,73 @@ func (ss *Sim) CmdArgs() {
 	}
 	
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
-	fmt.Printf("sigma is %v", ss.pop_sigma)
 
-	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
-	models := []int{0, 1, 2, 3, 4}
+
+//Trying to debug lesioning 1 stripe at a time	
+	//ss.Tag = "lesion1stripes"
+	//ss.TrainEpoch()
+	//ss.Tag = "_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+	//ly := ss.Net.LayerByName("PFCOutD").(leabra.LeabraLayer).AsLeabra()
+	//fmt.Printf(ly.Neurons
+	//ly := &ss.Net.LayerByName("PFCOutD").(deep.DeepLayer).AsDeep()
+	//for ni := range ly.Neurons {
+	//fmt.Printf("ni %v",ni)
+	//fmt.Printf("ni idx %v", ni[0])
+	//if ni.Pools == 1{
+	//	ni.SetOff()
+	//		}
+	//}
+	//ss.RunTestAll()
 	
-	for _,w := range RewThresholds {
-		
-		ss.RewThreshold = w
+	//proportion of trials have lesion
+	props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1}
+	models := []int{0, 1, 2, 3, 4}
+	for _,w := range props {
+	
+		ss.LesionProp = w
+		fmt.Printf("LesionProps is %v",w)
 		for _,v := range models {
-
-			//fmt.Printf("model %v", v)
-			ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+			ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
 			fmt.Printf(ss.Tag)
-
+			ss.Init()
 			ss.TrainRun()
 			ss.RunTestAll()
 
-		}
 	}
+	
+
+	}
+	
+//	models := []int{0, 1, 2, 3, 4}
+//	for _,v := range models {
+//		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+//		fmt.Printf(ss.Tag)
+//		ss.TrainRun()
+//		ss.RunTestAll()
+//
+//	}
+	
+
+	//used to optimize reward threshold.
+
+	//RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
+	//models := []int{0, 1, 2, 3, 4}
+	
+	//for _,w := range RewThresholds {
+	//	
+	//	ss.RewThreshold = w
+	//	fmt.Printf("reward threshold is %v",w)
+	//	for _,v := range models {
+	//
+	//		//fmt.Printf("model %v", v)
+	//		ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+	//		fmt.Printf(ss.Tag)
+	//
+	//		ss.TrainRun()
+	//		ss.RunTestAll()
+
+	//		}
+	//}
 
 	//ss.Train()
 	//ss.TrainRun()

@@ -40,9 +40,9 @@ type SIREnv struct {
 	RewVal   float32         `desc:"value for reward, based on whether model output = target"`
 	NoRewVal float32         `desc:"value for non-reward"`
 	Act      Actions         `desc:"current action"`
-	Stim     int             `desc:"current stimulus"`
-	Maint1    int            `desc:"current stimulus being maintained in 1"`
-	Maint2    int            `desc:"current stimulus being maintained in 2"`
+	Stim     float64             `desc:"current stimulus"`
+	Maint1    float64            `desc:"current stimulus being maintained in 1"`
+	Maint2    float64            `desc:"current stimulus being maintained in 2"`
 	Input    etensor.Float64 `desc:"input pattern with action + stim"`
 	CtrlInput etensor.Float64 `desc:"output input pattern with action"`
 	Output   etensor.Float64 `desc:"output pattern of what to respond"`
@@ -113,7 +113,8 @@ func (ev *SIREnv) StimStr(stim int) string {
 
 // String returns the current state as a string
 func (ev *SIREnv) String() string {
-	return fmt.Sprintf("%v_%v_mnt1_%v_mnt2_%v_rew_%v", ev.Act, ev.StimStr(ev.Stim), ev.StimStr(ev.Maint1), ev.StimStr(ev.Maint2),  ev.Reward.Values[0])
+	//return fmt.Sprintf("%v_%v_mnt1_%v_mnt2_%v_rew_%v", ev.Act, ev.StimStr(ev.Stim), ev.StimStr(ev.Maint1), ev.StimStr(ev.Maint2),  ev.Reward.Values[0])
+	return fmt.Sprintf("%v_%v_mnt1_%v_mnt2_%v_rew_%v", ev.Act, ev.Stim, ev.Maint1, ev.Maint2, ev.Reward.Values[0])
 }
 
 func (ev *SIREnv) Init(run int) {
@@ -131,6 +132,9 @@ func (ev *SIREnv) Init(run int) {
 
 // SetState sets the input, output states
 func (ev *SIREnv) SetState() {
+	// choosing random component to add 
+	//random_stimuli := rand.Float64()
+
 	ev.Input.SetZeros()
 	//ev.Input.Values[ev.Act] = 1 //CtrlInput contains info for actions not Input
 
@@ -139,34 +143,42 @@ func (ev *SIREnv) SetState() {
 
 	if ev.Act != Recall1 && ev.Act != Recall2 {
 		//ev.Input.Values[ev.Stim] = 1
-		
 		ev.Input.Values[0] = float64(ev.Stim)
+		//ev.Input.Values[0] = (float64(ev.Stim)+ random_stimuli)
+		//fmt.Printf("stim is %v", ev.Stim)
+		//fmt.Printf("rand add is %v", random_stimuli)
+		//fmt.Printf("ev.Input.Values is %v", ev.Input.Values)
 	}
 	if ev.Act == Recall1 || ev.Act == Recall2 {
 		ev.Input.Values[0]=-999
 	}
 	
 	ev.Output.SetZeros()
-//	ev.Output.Values[ev.Stim] = 1
 	ev.Output.Values[0]=float64(ev.Stim)
+
+//	ev.Output.Values[ev.Stim] = 1
+//	ev.Output.Values[0]=(float64(ev.Stim)+random_stimuli)
+//	fmt.Printf("ev.Output.Values is %v", ev.Output.Values)
 }
 
+//no point in keeping - netout here is int, but we have float64
 // SetReward sets reward based on network's output
-func (ev *SIREnv) SetReward(netout int) bool {
-	cor := ev.Stim // already correct
-	rw := netout == cor
-	//fmt.Printf("cor is %v",cor)
-	if rw {
-		ev.Reward.Values[0] = float64(ev.RewVal)
-	} else {
-		ev.Reward.Values[0] = float64(ev.NoRewVal)
-	}
-	return rw
-}
+//func (ev *SIREnv) SetReward(netout int) bool {
+//	cor := ev.Stim // already correct
+//	rw := netout == cor
+//	//fmt.Printf("cor is %v",cor)
+//	if rw {
+//		ev.Reward.Values[0] = float64(ev.RewVal)
+//	} else {
+//		ev.Reward.Values[0] = float64(ev.NoRewVal)
+//	}
+//	return rw
+//}
 
 func (ev *SIREnv) SetRewardThres(netout float64, threshold float64) bool {
 	//cor := ev.Stim // already correct
 	//threshold := float64(1)
+	//here netout is the differnece between the decoded input and decoded output.
 	rw := netout <= threshold
 	if rw {
 		ev.Reward.Values[0] = float64(ev.RewVal)
@@ -204,6 +216,8 @@ func (ev *SIREnv) SetRewardThres(netout float64, threshold float64) bool {
 
 // Step the SIR task
 func (ev *SIREnv) StepSIR() {
+
+	//choose random action and stim but later in setstate modify this from int action to float64 that is continuously varying (not discrete)
 	for {
 		ev.Act = Actions(rand.Intn(int(ActionsN)))
 
@@ -231,7 +245,10 @@ func (ev *SIREnv) StepSIR() {
 
 		break
 	}
-	ev.Stim = rand.Intn(ev.NStim)
+	//ev.Stim = rand.Intn(ev.Nstim)
+	//ev.Stim = float64(rand.Intn(ev.NStim))
+	ev.Stim = (float64(rand.Intn(ev.NStim))+rand.Float64())
+	//fmt.Printf("ev.stim is %v", ev.Stim)
 	switch ev.Act {
 	case Store1:
 		ev.Maint1 = ev.Stim
