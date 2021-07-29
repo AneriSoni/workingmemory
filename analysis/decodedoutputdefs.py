@@ -7,8 +7,8 @@ sns.set()
 
 class Precision():
     def __init__(self,file):
-        #df = pd.read_csv(file,'\s+')
-        df = pd.read_csv(file)
+        df = pd.read_csv(file,'\s+')
+        #df = pd.read_csv(file)
         self.df = df
         
     def plot_sigma(self,files,savefile):

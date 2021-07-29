@@ -13,3 +13,5 @@
 
 
 *.ipynb_checkpoints
+
+/analysis_output/
