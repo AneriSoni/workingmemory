@@ -635,6 +635,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 				//pc.Encode(&temp,v,20,Set==true)
 				//&ss.InOneTsr.Values = temp
 				//pc.Encode(&ss.InOneTsr.Values,v,20,Set)
+
 				pc.Encode(&ss.InOneTsr.Values,v,20,false) //original command
 				ly.ApplyExt(ss.InOneTsr)
 			}
@@ -653,7 +654,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	
 		}
 
-		ly.ApplyExt(pats)
+		//ly.ApplyExt(pats)
 	}
 }
 
