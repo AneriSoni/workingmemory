@@ -1786,10 +1786,11 @@ func (ss *Sim) CmdArgs() {
 	
 		ss.LesionProp = w
 		fmt.Printf("LesionProps is %v",w)
+		ss.Init()
 		for _,v := range models {
 			ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
 			fmt.Printf(ss.Tag)
-			ss.Init()
+			//ss.Init()
 			ss.TrainRun()
 			ss.RunTestAll()
 
