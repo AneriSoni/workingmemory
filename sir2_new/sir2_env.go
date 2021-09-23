@@ -50,6 +50,8 @@ type SIREnv struct {
 	Run       env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
 	Epoch     env.Ctr         `view:"inline" desc:"number of times through Seq.Max number of sequences"`
 	Trial     env.Ctr         `view:"inline" desc:"trial is the step counter within epoch"`
+	StimType  string		 `desc:"continuous stimulus or fixed"`
+
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -180,7 +182,19 @@ func (ev *SIREnv) StepSIR() {
 		break
 	}
 	//ev.Stim = rand.Intn(ev.NStim)
-	ev.Stim = (float64(rand.Intn(ev.NStim))+rand.Float64())
+	//ev.Stim = (float64(rand.Intn(ev.NStim))+rand.Float64())
+	//ev.Stim = rand.Float64()*float64(3)
+	if ev.StimType == "Cont" {
+		ev.Stim = rand.Float64()*float64(ev.NStim-1)
+
+	}
+	if ev.StimType == "Fixed" {
+		ev.Stim = float64(rand.Intn(ev.NStim))
+
+	}
+	
+
+
 	switch ev.Act {
 	case Store1:
 		ev.Maint1 = ev.Stim

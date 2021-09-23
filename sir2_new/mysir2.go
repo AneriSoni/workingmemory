@@ -394,6 +394,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
+	ss.TrainEnv.StimType = "Cont" //continuous (0-3) vs. fixed stimulus (0,1,2,3)
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
@@ -403,6 +404,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Validate()
 	ss.TestEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TestEnv.Trial.Max = 500       // good amount for testing
+	ss.TestEnv.StimType = "Cont"
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
@@ -959,6 +961,9 @@ func (ss *Sim) TestAll() {
 func (ss *Sim) RunTestAll() {
 
 	var err error
+
+	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/"+ss.RunName()+".csv"
+
 	fnm := "/gpfs/home/asoni4/leabra/examples/Randysir2_mymod/sir2/results/"+ss.RunName()+".csv"
 	ss.TstTrlFile, err = os.Create(fnm)
 
