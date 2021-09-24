@@ -964,7 +964,7 @@ func (ss *Sim) RunTestAll() {
 
 	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/"+ss.RunName()+".csv"
 
-	fnm := "/gpfs/home/asoni4/leabra/examples/Randysir2_mymod/sir2/results/"+ss.RunName()+".csv"
+	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/"+ss.RunName()+".csv"
 	ss.TstTrlFile, err = os.Create(fnm)
 
 	ss.StopNow = false
@@ -1719,8 +1719,8 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
-	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
-	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
+	flag.BoolVar(&saveEpcLog, "epclog", false, "if true, save train epoch log to file")
+	flag.BoolVar(&saveRunLog, "runlog", false, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
 	flag.StringVar(&ss.Lesion, "Lesion","None", "lesion type")
 	flag.Float64Var(&ss.LesionProp, "LesionProp",0,"proportion of test trials with lesion")
