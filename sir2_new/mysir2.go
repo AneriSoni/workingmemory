@@ -1763,55 +1763,39 @@ func (ss *Sim) CmdArgs() {
 	}
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
 
-	//ss.Train()
-//Trying to debug lesioning 1 stripe at a time	
-	//ss.Tag = "lesion1stripes"
-	//ss.TrainEpoch()
-	//ss.Tag = "_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-	//ly := ss.Net.LayerByName("PFCOutD").(leabra.LeabraLayer).AsLeabra()
-	//fmt.Printf(ly.Neurons
-	//ly := &ss.Net.LayerByName("PFCOutD").(deep.DeepLayer).AsDeep()
-	//for ni := range ly.Neurons {
-	//fmt.Printf("ni %v",ni)
-	//fmt.Printf("ni idx %v", ni[0])
-	//if ni.Pools == 1{
-	//	ni.SetOff()
-	//		}
-	//}
-	//ss.RunTestAll()
-	
-	//proportion of trials have lesion
 	
 	//props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1}
 	//models := []int{0, 1, 2, 3, 4}
 	
-	props := []float64{1}
+	//props := []float64{0}
+	//models := []int{0, 1, 2, 3, 4}
+	//for _,w := range props {
+	
+		//ss.LesionProp = w
+		//fmt.Printf("LesionProps is %v",w)
+		//ss.Init() //right place to init
+		//for _,v := range models {
+			//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+			//fmt.Printf(ss.Tag)
+			////ss.Init() //no longer the right place to init. - get same random seed
+			//ss.TrainRun()
+			//ss.RunTestAll()
+
+	//}
+	
+
+	//}
+	
 	models := []int{0, 1, 2, 3, 4}
-	for _,w := range props {
-	
-		ss.LesionProp = w
-		fmt.Printf("LesionProps is %v",w)
-		ss.Init()
-		for _,v := range models {
-			ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			fmt.Printf(ss.Tag)
-			//ss.Init()
-			ss.TrainRun()
-			ss.RunTestAll()
+	//ss.Init() //already ran once up there.
+	for _,v := range models {
+		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+		fmt.Printf(ss.Tag)
+		ss.TrainRun()
+		ss.RunTestAll()
 
 	}
 	
-
-	}
-	
-//	models := []int{0, 1, 2, 3, 4}
-//	for _,v := range models {
-//		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-//		fmt.Printf(ss.Tag)
-//		ss.TrainRun()
-//		ss.RunTestAll()
-//
-//	}
 	
 
 	//used to optimize reward threshold.
@@ -1835,9 +1819,7 @@ func (ss *Sim) CmdArgs() {
 	//		}
 	//}
 
-	//ss.Train()
-	//ss.TrainRun()
+
 	//fmt.Printf("sigma %v",ss.pop_sigma)
-	//fmt.Printf("Running Test All")
-	//ss.RunTestAll()
+
 }
