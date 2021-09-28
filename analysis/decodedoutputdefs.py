@@ -26,7 +26,7 @@ class Precision():
         i = 1
         for key in dat.keys():
             _,diffrecall = self.get_diffs(dat[key])
-            plt.subplot(2,3,i)
+            plt.subplot(1,6,i)
             #plt.hist(diffrecall,range = (-0.01,0.01))
             plt.hist(diffrecall)
             plt.title('Sigma:{}'.format(float(key)))
@@ -36,6 +36,65 @@ class Precision():
         plt.tight_layout()
         #plt.show()
         plt.savefig(savefile)
+        
+    def plot_sigma2(self,files,savefile):
+        print('give files of only 1 sigma and multiple threshold')
+        print('will plot both the histograms and 1 graph with rew. threshold and variance of histograms')
+        dat = {}
+        
+        for f in files: 
+            sig = f.split('.csv')[0].split('sigma')[1].split('_Base')[0]
+            thres = f.split('_Threhsold')[1].split('_')[0]
+            if thres in dat.keys():
+                dat[thres]=dat[thres].append(pd.read_csv(f,sep='\s+'))
+            else:
+                dat[thres] = pd.read_csv(f,sep='\s+')
+                
+        stds = []
+        means = []
+        i = 1
+        sorted_k = [float(k) for k in list(dat.keys())]
+        sorted_k.sort()
+        import pdb; pdb.set_trace()
+        for k in sorted_k:
+            key = str(k)
+            _,diffrecall = self.get_diffs(dat[key])
+            stds.append(np.std(diffrecall))
+            means.append(np.mean(diffrecall))
+            #plt.subplot(2,4,i)
+            ##plt.hist(diffrecall,range = (-0.01,0.01))
+            #plt.hist(diffrecall)
+            #plt.title('Threshold:{}'.format(float(key)))
+            #i+=1
+        #plt.subplot(2,4,8)
+        plt.subplot(2,1,1)
+        plt.scatter(list(dat.keys()),stds)
+        plt.title('Sigma: {}, Std'.format(sig))
+        plt.subplot(2,1,2)
+        plt.scatter(list(dat.keys()),means)
+        plt.title('Sigma: {}, Mean'.format(sig))
+        plt.tight_layout()
+        
+    def plot_sigma_best(self,files,sigma,savefile):
+        dat = {}
+        for f in files:
+            thres = f.split('Threhsold')[1].split('_')[0]
+            if thres in dat.keys():
+                dat[thres]=dat[thres].append(pd.read_csv(f,sep='\s+'))
+            else:
+                dat[thres] = pd.read_csv(f,sep='\s+')
+        
+        #plots = len(files) #if I want to plot each rew-threshold histogram separately.
+        #i = 1 
+        each_rew = []
+        for key in dat.keys():
+            _,diffrecall = self.get_diffs(dat[key])
+            each_rew.append(np.mean(diffrecall))
+        plt.scatter(list(dat.keys()),each_rew)
+        plt.xlabel('Reward Threshold')
+        plt.ylabel('Mean Error on Recall Trials')
+        plt.title('Sigma:{}'.format(float(sigma)))
+        
             
     def get_diffs(self,df):
         df_include= []

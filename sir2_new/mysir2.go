@@ -255,7 +255,7 @@ type Sim struct {
 
 	pop_min     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`  
 	pop_max     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
-	pop_sigma   float32           `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range"`
+	pop_sigma   float64           `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range, float64 so can use tags, otherwise inside setrange, need to be float32 so will be changed before inputting there"`
 
 	RewThreshold float64          `desc: "threshold for reward function"`
 
@@ -602,7 +602,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	pc:= popcode.OneD{}
 	pc.Defaults()
 	
-	pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma)
+	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma))
 
 	lays := []string{"Input", "CtrlInput", "Output"}
 	for _, lnm := range lays {
@@ -693,7 +693,7 @@ func (ss *Sim) ApplyReward(train bool) {
 
 	pc := popcode.OneD{}//previously defined pc does not work here
 	pc.Defaults()
-	pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma) //does not say to add these two - lets see if it works
+	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two - lets see if it works
 
 	//Actual Value
 	out.UnitVals(&ss.TmpVals,"ActM") //writes ActM value from the layer
@@ -705,6 +705,8 @@ func (ss *Sim) ApplyReward(train bool) {
 
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
 	//en.SetReward(mxi)
+
+	
 
 	en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2,ss.TmpVals))),ss.RewThreshold) //based on difference + threshold (in sir_env)
 
@@ -1211,7 +1213,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	pc := popcode.OneD{}//previously defined pc does not work here
 	pc.Defaults()
-	pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma) //does not say to add these two
+	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two
 
 	trl := ss.TestEnv.Trial.Cur
 	row := trl
@@ -1724,6 +1726,8 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
 	flag.StringVar(&ss.Lesion, "Lesion","None", "lesion type")
 	flag.Float64Var(&ss.LesionProp, "LesionProp",0,"proportion of test trials with lesion")
+	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
+	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 2, "threshold for rew in sir2_env")
 	flag.Parse()
 	ss.Init()
 
@@ -1786,40 +1790,52 @@ func (ss *Sim) CmdArgs() {
 
 	//}
 	
+//	models := []int{0, 1, 2, 3, 4}
+//	//ss.Init() //already ran once up there.
+//	for _,v := range models {
+//		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+//		fmt.Printf(ss.Tag)
+//		ss.TrainRun()
+//		ss.RunTestAll()
+//
+//	}
+	
+
+
+
+	//used to optimize reward threshold.
+
 	models := []int{0, 1, 2, 3, 4}
-	//ss.Init() //already ran once up there.
 	for _,v := range models {
-		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+		ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
 
 	}
 	
-	
-
-	//used to optimize reward threshold.
-
-	//RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
-	//models := []int{0, 1, 2, 3, 4}
-	
-	//for _,w := range RewThresholds {
-	//	
-	//	ss.RewThreshold = w
-	//	fmt.Printf("reward threshold is %v",w)
-	//	for _,v := range models {
-	//
-	//		//fmt.Printf("model %v", v)
-	//		ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
-	//		fmt.Printf(ss.Tag)
-	//
-	//		ss.TrainRun()
-	//		ss.RunTestAll()
-
-	//		}
-	//}
 
 
-	//fmt.Printf("sigma %v",ss.pop_sigma)
-
+//	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
+//	models := []int{0, 1, 2, 3, 4}
+//	
+//	for _,w := range RewThresholds {
+//		
+//		ss.RewThreshold = w
+//		fmt.Printf("reward threshold is %v",w)
+//		for _,v := range models {
+//	
+//			//fmt.Printf("model %v", v)
+//			ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+//			fmt.Printf(ss.Tag)
+//	
+//			ss.TrainRun()
+//			ss.RunTestAll()
+//
+//			}
+//	}
+//
+//
+//	//fmt.Printf("sigma %v",ss.pop_sigma)
+//
 }
