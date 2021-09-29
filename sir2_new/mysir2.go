@@ -409,8 +409,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
 
-	ss.pop_min = -0.2
-	ss.pop_max = 3.2
+	ss.pop_min = 0
+	ss.pop_max = 3.4
 	ss.pop_sigma = 0.15 // need to optimize over this parameter
 
 	ss.RewThreshold = 2
@@ -429,7 +429,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	inp := net.AddLayer2D("Input", 1, 20, emer.Input)
 	ctrl := net.AddLayer2D("CtrlInput", 1, 5, emer.Input)
 	out := net.AddLayer2D("Output", 1, 20, emer.Target)
-	hid := net.AddLayer2D("Hidden", 7, 7, emer.Hidden)
+	hid := net.AddLayer2D("Hidden", 20, 20, emer.Hidden)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	ctrl.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", XAlign: relpos.Left, Space: 2})
@@ -468,7 +468,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayers(inp, hid, full, emer.Forward)
 	net.ConnectLayers(ctrl, hid, full, emer.Forward)
 	net.BidirConnectLayers(hid, out, full)
-	pj = net.ConnectLayers(pfcOutD, hid, full, emer.Forward)
+	//pj = net.ConnectLayers(pfcOutD, hid, full, emer.Forward)
+	pj = net.ConnectLayers(pfcOutD, hid, fmin, emer.Forward)
 	pj.SetClass("FmPFCOutD")
 	pj = net.ConnectLayers(pfcOutD, out, full, emer.Forward)
 	pj.SetClass("FmPFCOutD")
