@@ -53,14 +53,14 @@ class Precision():
         stds = []
         means = []
         i = 1
-        sorted_k = [float(k) for k in list(dat.keys())]
-        sorted_k.sort()
-        import pdb; pdb.set_trace()
-        for k in sorted_k:
-            key = str(k)
+        keys = list(dat.keys())
+        sorted_keys = []
+        for k in np.argsort(keys):
+            key = keys[k]
             _,diffrecall = self.get_diffs(dat[key])
             stds.append(np.std(diffrecall))
             means.append(np.mean(diffrecall))
+            sorted_keys.append(key)
             #plt.subplot(2,4,i)
             ##plt.hist(diffrecall,range = (-0.01,0.01))
             #plt.hist(diffrecall)
@@ -68,10 +68,12 @@ class Precision():
             #i+=1
         #plt.subplot(2,4,8)
         plt.subplot(2,1,1)
-        plt.scatter(list(dat.keys()),stds)
+        plt.scatter(sorted_keys,stds)
+        #plt.scatter(list(dat.keys()),stds)
         plt.title('Sigma: {}, Std'.format(sig))
         plt.subplot(2,1,2)
-        plt.scatter(list(dat.keys()),means)
+        plt.scatter(sorted_keys,means)
+        #plt.scatter(list(dat.keys()),means)
         plt.title('Sigma: {}, Mean'.format(sig))
         plt.tight_layout()
         
