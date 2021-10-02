@@ -5,6 +5,15 @@ import seaborn as sns
 import os
 sns.set()
 
+class Chunking():
+    def __init__(self):
+        df = pd.read_csv(file,'\s+')
+        
+    def plot(self):
+        plt.scatter(inp-hid,inp-chunk)
+        plt.xlabel('Diff between inp and hid')
+        plt.ylabel('Diff between chunk and inp')
+
 class Precision():
     def __init__(self,file):
         df = pd.read_csv(file,'\s+')

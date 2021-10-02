@@ -13,5 +13,6 @@
 
 
 *.ipynb_checkpoints
+*.csv
 
 /analysis_output/
