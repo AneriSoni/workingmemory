@@ -410,10 +410,10 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Init(0)
 
 	ss.pop_min = 0
-	ss.pop_max = 3.4
+	ss.pop_max = 3.6
 	ss.pop_sigma = 0.15 // need to optimize over this parameter
 
-	ss.RewThreshold = 2
+	ss.RewThreshold = 5.5
 	
 	ss.Lesion = "None"
 	ss.LesionProp = 0
