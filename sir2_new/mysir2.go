@@ -414,7 +414,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.pop_max = 3.6
 	ss.pop_sigma = 0.15 // need to optimize over this parameter
 
-	ss.RewThreshold = 5.5
+	ss.RewThreshold = 5.5 //changing this wont work - need to change in the buttom - tag
 	
 	ss.Lesion = "None"
 	ss.LesionProp = 0
@@ -1729,7 +1729,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Lesion, "Lesion","None", "lesion type")
 	flag.Float64Var(&ss.LesionProp, "LesionProp",0,"proportion of test trials with lesion")
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
-	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 2, "threshold for rew in sir2_env")
+	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 5.5, "threshold for rew in sir2_env")
 	flag.Parse()
 	ss.Init()
 
