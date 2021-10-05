@@ -174,6 +174,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".PFC", Desc: "pfc defaults",
 				Params: params.Params{
+					"Layer.Act.XX1.Gain":       "5",
 					"Layer.Inhib.Layer.On":     "false",
 					"Layer.Inhib.Pool.On":      "true",
 					"Layer.Inhib.Pool.Gi":      "1.8",
