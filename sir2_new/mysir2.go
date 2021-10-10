@@ -432,7 +432,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	out := net.AddLayer2D("Output", 1, 20, emer.Target)
 	hid := net.AddLayer2D("Hidden", 20, 20, emer.Hidden)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
-	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
+	//out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
+	out.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	ctrl.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", XAlign: relpos.Left, Space: 2})
 	hid.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "CtrlInput", XAlign: relpos.Left, Space: 2})
 
@@ -447,7 +448,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	cin := cini.(*pbwm.CINLayer)
 	cin.RewLays.Add(rew.Name(), rp.Name())
 
-	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Rew", YAlign: relpos.Front, Space: 14})
+	//mtxGo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Rew", YAlign: relpos.Front, Space: 14})
+	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Rew", YAlign: relpos.Front, Space: 20})
 
 	full := prjn.NewFull()
 	fmin := prjn.NewRect()
@@ -1452,20 +1454,20 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	nv.ViewDefaults()
 
-	labs := []string{"    A B C D ", "  A B C D   A B C D ", "  A B C D  A B C D",
-		"A B C D  A B C D ", "A B C D  A B C D", "   A B C D ", "  S1 S2 I R1 R2 "}
-	nv.ConfigLabels(labs)
+	//labs := []string{"    A B C D ", "  A B C D   A B C D ", "  A B C D  A B C D",
+	//	"A B C D  A B C D ", "A B C D  A B C D", "   A B C D ", "  S1 S2 I R1 R2 "}
+	//nv.ConfigLabels(labs)
 
-	lays := []string{"Input", "PFCmnt", "PFCmntD", "PFCout", "PFCoutD", "Output", "CtrlInput"}
+	//lays := []string{"Input", "PFCmnt", "PFCmntD", "PFCout", "PFCoutD", "Output", "CtrlInput"}
 
-	for li, lnm := range lays {
-		ly := nv.LayerByName(lnm)
-		lbl := nv.LabelByName(labs[li])
-		lbl.Pose = ly.Pose
-		lbl.Pose.Pos.Y += .08
-		lbl.Pose.Pos.Z += .02
-		lbl.Pose.Scale.SetMul(mat32.Vec3{1, 0.3, 0.5})
-	}
+	//for li, lnm := range lays {
+	//	ly := nv.LayerByName(lnm)
+		//lbl := nv.LabelByName(labs[li])
+		//lbl.Pose = ly.Pose
+		//lbl.Pose.Pos.Y += .08
+		//lbl.Pose.Pos.Z += .02
+		//lbl.Pose.Scale.SetMul(mat32.Vec3{1, 0.3, 0.5})
+	//}
 }
 
 // ConfigGui configures the GoGi gui interface for this simulation,
