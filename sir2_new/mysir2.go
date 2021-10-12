@@ -1794,29 +1794,29 @@ func (ss *Sim) CmdArgs() {
 
 	//}
 	
-//	models := []int{0, 1, 2, 3, 4}
-//	//ss.Init() //already ran once up there.
-//	for _,v := range models {
-//		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-//		fmt.Printf(ss.Tag)
-//		ss.TrainRun()
-//		ss.RunTestAll()
-//
-//	}
-	
-
-
-
-	//used to optimize reward threshold.
-
 	models := []int{0, 1, 2, 3, 4}
+	//ss.Init() //already ran once up there.
 	for _,v := range models {
-		ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
 
 	}
+	
+
+
+
+//	//used to optimize reward threshold.
+//
+//	models := []int{0, 1, 2, 3, 4}
+//	for _,v := range models {
+//		ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+//		fmt.Printf(ss.Tag)
+//		ss.TrainRun()
+//		ss.RunTestAll()
+//
+//	}
 	
 
 
