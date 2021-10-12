@@ -441,7 +441,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Init(0)
 
 	ss.pop_min = 0
-	ss.pop_max = 3.6
+	ss.pop_max = 3.8
 	ss.pop_sigma = 0.15 // need to optimize over this parameter
 
 	ss.RewThreshold = 5.5
@@ -1011,7 +1011,7 @@ func (ss *Sim) RunTestAll() {
 
 	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/"+ss.RunName()+".csv"
 
-	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/"+ss.RunName()+".csv"
+	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/"+ss.Folder()+ss.RunName()+".csv"
 	ss.TstTrlFile, err = os.Create(fnm)
 
 	ss.StopNow = false
@@ -1786,6 +1786,7 @@ func (ss *Sim) CmdArgs() {
 	flag.Float64Var(&ss.LesionProp, "LesionProp",0,"proportion of test trials with lesion")
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
 	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 2, "threshold for rew in sir2_env")
+	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
 	flag.Parse()
 	ss.Init()
 
