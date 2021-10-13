@@ -312,6 +312,7 @@ type Sim struct {
 	Lesion        string    `inactive:"+" desc:"what type of lesion: ex) PFC, Hidden, None, PFCHidden"`
 	LesionProp    float64   `inactive:"+" desc:"proportion of test trials to have a lesion"`
 	LesionApplied string      `inactive:"+" desc:"if lesion is actually applied"`
+	Folder	      string     `inactive:"+" desc:"folder for saving"`
 
 	// internal state - view:"-"
 	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -1011,7 +1012,7 @@ func (ss *Sim) RunTestAll() {
 
 	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/"+ss.RunName()+".csv"
 
-	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/"+ss.Folder()+ss.RunName()+".csv"
+	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/"+ss.Folder+ss.RunName()+".csv"
 	ss.TstTrlFile, err = os.Create(fnm)
 
 	ss.StopNow = false
