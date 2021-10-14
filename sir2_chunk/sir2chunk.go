@@ -520,9 +520,9 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
 	pj = net.ConnectLayers(inp,chunk,fmin, emer.Forward)
-	pj=net.ConnectLayers(pfcMntD,chunk,fmin,emer.Forward)
+	pj=net.ConnectLayers(pfcMntD,chunk,fmin2,emer.Forward)
 	pj.SetClass("PFCMntDChunk")
-	pj = net.ConnectLayers(chunk, pfcMnt, fmin2, emer.Forward)
+	pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward)
 	pj.SetClass("PFCFixedChunk")
 
 
