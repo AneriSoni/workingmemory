@@ -177,7 +177,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.XX1.Gain":       "5", //gain should be lower to make it less blocky?what is the trade off?
 					"Layer.Inhib.Layer.On":     "false",
 					"Layer.Inhib.Pool.On":      "true",
-					"Layer.Inhib.Pool.Gi":      "1.8",
+					"Layer.Inhib.Pool.Gi":      "1.8", 
 					"Layer.Inhib.Pool.FB":      "1",
 					"Layer.Inhib.ActAvg.Init":  "0.2",
 					"Layer.Inhib.ActAvg.Fixed": "true",
@@ -439,7 +439,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	hid.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "CtrlInput", XAlign: relpos.Left, Space: 2})
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
-	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, 20)
+	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, 20)
+	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 8, 1, 1, 1, 5, 1, 20)
 	_ = gpe
 	_ = gpi
 	_ = pfcMnt
@@ -458,6 +459,11 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	fmin.Scale.Set(1, 1)
 	fmin.Wrap = true
 
+	fmin2 := prjn.NewRect()
+	fmin2.Size.Set(1, 8)
+	fmin2.Scale.Set(1, 1)
+	fmin2.Wrap = true
+
 	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcOutD, rp, full, emer.Forward, &rl.RWPrjn{})
@@ -473,9 +479,10 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayers(ctrl, hid, full, emer.Forward)
 	net.BidirConnectLayers(hid, out, full)
 	//pj = net.ConnectLayers(pfcOutD, hid, full, emer.Forward)
-	pj = net.ConnectLayers(pfcOutD, hid, fmin, emer.Forward)
+	pj = net.ConnectLayers(pfcOutD, hid, fmin2, emer.Forward)
 	pj.SetClass("FmPFCOutD")
-	pj = net.ConnectLayers(pfcOutD, out, full, emer.Forward)
+	//pj = net.ConnectLayers(pfcOutD, out, full, emer.Forward)
+	pj = net.ConnectLayers(pfcOutD, out, fmin2, emer.Forward)
 	pj.SetClass("FmPFCOutD")
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
