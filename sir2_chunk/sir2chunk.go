@@ -219,10 +219,10 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.Gi": "1.4",
 					"Layer.Act.XX1.Gain":    "5", //gain should be lower to make it less blocky?what is the trade off?
 				}},			
-			{Sel: "#InputToChunk", Desc: "weaker",
+			{Sel: "#InputToChunk", Desc: "Input to Chunk",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.6",
+					"Prjn.WtInit.Mean": "0.7",
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
 				}},
@@ -1873,8 +1873,11 @@ func (ss *Sim) CmdArgs() {
 	//used to optimize reward threshold.
 
 	models := []int{0, 1, 2, 3, 4}
+
+	
 	for _,v := range models {
-		ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+	//	ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+		ss.Tag = "model"+strconv.Itoa(v)+ss.Tag
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
