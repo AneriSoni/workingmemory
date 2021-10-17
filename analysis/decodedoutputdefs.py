@@ -6,13 +6,71 @@ import os
 sns.set()
 
 class Chunking():
-    def __init__(self):
+    def __init__(self, file):
         df = pd.read_csv(file,'\s+')
+        #df = pd.read_csv(file_loc+file)
+        self.df = df
+        
+    def chunk(self):
+        df = self.df
+        df_include= [] #want all trials that are not recall
+        for i in df['$TrialName']:
+            if 'Recall' in i:
+                df_include.append('False')
+            else:
+                df_include.append('True')
+        df.index=df_include
+        df_norecall = df.loc['True']
+        
+        inp = [float(i.split('_')[1]) for i in df_norecall['$TrialName']]
+        inp_act = df_norecall['#InDecode']
+        chunk = df_norecall['#ChunkDecode']
+        
+        mnt1 = [float(i.split('_')[3]) for i in df_norecall['$TrialName']]
+        mnt2 = [float(i.split('_')[5]) for i in df_norecall['$TrialName']]
+        inp_act = inp_act.values
+        chunk = chunk.values
+        
+        num_trials = len(mnt1)
+        DInpMnt = []  #differnce between input and what is being maintained
+        DInpChunk = [] #difference between input and chunk layer
+        for i in range(num_trials):
+            Tmnt1 = mnt1[i]
+            Tmnt2 = mnt2[i]
+            Tinp = inp_act[i]
+            Tchunk = chunk[i]
+
+            DChunk = Tinp - Tchunk
+
+            if Tmnt1!=-1 or Tmnt2!=-1:
+                if Tmnt1!=-1 and Tmnt2!=-1:
+                    D1 = Tinp-Tmnt1
+                    D2 = Tinp-Tmnt2
+
+                    DInpMnt.append(np.min([D1,D2]))
+                    DInpChunk.append(Tinp-Tchunk)
+
+                elif Tmnt1!=-1:
+                    D1 = Tinp-Tmnt1
+
+                    DInpMnt.append(D1)
+                    DInpChunk.append(Tinp-Tchunk)
+
+                elif Tmnt2!=-1:
+                    D2 = Tinp-Tmnt2
+                    DInpMnt.append(D2)
+                    DInpChunk.append(Tinp-Tchunk)
+        self.DInpMnt = DInpMnt
+        self.DInpChunk = DInpChunk
+        
+    
         
     def plot(self):
-        plt.scatter(inp-hid,inp-chunk)
-        plt.xlabel('Diff between inp and hid')
-        plt.ylabel('Diff between chunk and inp')
+        self.chunk()
+        plt.scatter(self.DInpMnt,self.DInpChunk)
+        plt.xlabel('Diff between Input and Maintained')
+        plt.ylabel('Diff between Input and Chunk')
+        plt.title('Chunk Layer')
 
 class Precision():
     def __init__(self,file):
