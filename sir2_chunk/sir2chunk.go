@@ -485,6 +485,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	_ = pfcMnt
 	_ = pfcMntD
 	_ = pfcOut
+	
+	fmt.Printf("stripes %v",ss.Stripes)
 
 	cin := cini.(*pbwm.CINLayer)
 	cin.RewLays.Add(rew.Name(), rp.Name())
@@ -1819,7 +1821,7 @@ func (ss *Sim) CmdArgs() {
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
 	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 2, "threshold for rew in sir2_env")
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
-	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
+//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
 
