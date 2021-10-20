@@ -1819,6 +1819,7 @@ func (ss *Sim) CmdArgs() {
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
 	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 2, "threshold for rew in sir2_env")
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
+	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
 
@@ -1884,7 +1885,8 @@ func (ss *Sim) CmdArgs() {
 	models := []int{0, 1, 2, 3, 4}
 	//ss.Init() //already ran once up there.
 	for _,v := range models {
-		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+		//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+		ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
