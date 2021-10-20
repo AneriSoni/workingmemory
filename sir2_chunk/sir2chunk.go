@@ -1323,9 +1323,9 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("ChunkDecode", row, float64(chdecode))
 
 	pfc.UnitVals(&ss.TmpValsPFC, "Act")
-	for i := 0; i< ss.Stripes; i++ {
-		pfcdecode := pc.Decode(ss.TmpValsPFC[i*ss.LayerSize:(i+1)*ss.LayerSize])
-		stnm := "stripe"+string(i)
+	for stripe := 0; stripe< ss.Stripes; stripe++ {
+		pfcdecode := pc.Decode(ss.TmpValsPFC[stripe*ss.LayerSize:(stripe+1)*ss.LayerSize])
+		stnm := "stripe"+string(stripe)
 		dt.SetCellFloat(stnm, row, float64(pfcdecode))
 	}
 
@@ -1371,8 +1371,8 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm, etensor.FLOAT64, ly.Shp.Shp, nil})
 	}
 
-	for i := 0; i< ss.Stripes; i++ {
-		stnm := "stripe"+string(i)
+	for stripe := 0; stripe< ss.Stripes; stripe++ {
+		stnm := "stripe"+string(stripe)
 		sch = append(sch,etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
 	}
 
