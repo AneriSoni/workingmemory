@@ -283,6 +283,7 @@ type Sim struct {
 	TmpVals2     []float32        `view:"-" desc:"for holding decoded layer values"`
 	TmpValsInp   []float32        `view:"-" desc:"for holding decoded layer values"`  
 	TmpValsCh    []float32        `view:"-" desc:"for holding decoded layer values"`
+	TmpValsPFC    []float32        `view:"-" desc:"for holding decoded layer values"`
 
 	pop_min     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`  
 	pop_max     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
@@ -313,6 +314,8 @@ type Sim struct {
 	LesionProp    float64   `inactive:"+" desc:"proportion of test trials to have a lesion"`
 	LesionApplied string      `inactive:"+" desc:"if lesion is actually applied"`
 	Folder	      string     `inactive:"+" desc:"folder for saving"`
+	LayerSize     int	`inactive:"+" desc:"layer size"`    
+	Stripes       int        `inactive:"+" desc:"number of pfc stripes"`   
 
 	// internal state - view:"-"
 	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -394,13 +397,13 @@ func (ss *Sim) ConfigInTsrs() { //need this to not have error nill pointer error
 
       if ss.InOneTsr == nil {
 
-         ss.InOneTsr = etensor.NewFloat32([]int{1, 20}, nil, nil)
+         ss.InOneTsr = etensor.NewFloat32([]int{1, ss.LayerSize}, nil, nil)
 
 }
 
       if ss.InTwoTsr == nil {
 
-         ss.InTwoTsr = etensor.NewFloat32([]int{1, 20}, nil, nil)
+         ss.InTwoTsr = etensor.NewFloat32([]int{1, ss.LayerSize}, nil, nil)
 
 }
 
@@ -450,6 +453,9 @@ func (ss *Sim) ConfigEnv() {
 	ss.Lesion = "None"
 	ss.LesionProp = 0
 	ss.LesionApplied = "no" 
+	
+	ss.LayerSize = 20
+	ss.Stripes = 2
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -458,11 +464,11 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	snc := da.(*rl.RWDaLayer)
 	snc.SetName("SNc")
 
-	inp := net.AddLayer2D("Input", 1, 20, emer.Input)
+	inp := net.AddLayer2D("Input", 1, ss.LayerSize, emer.Input)
 	ctrl := net.AddLayer2D("CtrlInput", 1, 5, emer.Input)
-	out := net.AddLayer2D("Output", 1, 20, emer.Target)
-	hid := net.AddLayer2D("Hidden", 20, 20, emer.Hidden)
-	chunk := net.AddLayer2D("Chunk", 1,20, emer.Hidden)
+	out := net.AddLayer2D("Output", 1, ss.LayerSize, emer.Target)
+	hid := net.AddLayer2D("Hidden", ss.LayerSize, ss.LayerSize, emer.Hidden)
+	chunk := net.AddLayer2D("Chunk", 1,ss.LayerSize, emer.Hidden)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	//out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	out.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "Input", YAlign: relpos.Front, Space: 1})
@@ -471,9 +477,9 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	chunk.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Hidden", XAlign: relpos.Left, Space: 3})
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
-	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, 20)
-	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 8, 1, 1, 1, 5, 1, 20)
-	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 2, 1, 1, 1, 5, 1, 20)
+	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, ss.LayerSize)
+	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 8, 1, 1, 1, 5, 1, ss.LayerSize)
+	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", ss.Stripes, 1, 1, 1, 5, 1, ss.LayerSize)
 	_ = gpe
 	_ = gpi
 	_ = pfcMnt
@@ -494,7 +500,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 
 	fmin2 := prjn.NewRect()
 	//fmin2.Size.Set(1, 8)
-	fmin2.Size.Set(1, 2)
+	fmin2.Size.Set(1, ss.Stripes)
 	fmin2.Scale.Set(1, 1)
 	fmin2.Wrap = true
 
@@ -689,11 +695,11 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 				//var temp []float32
 
 				//fmt.Printf("temp is %v", temp)
-				//pc.Encode(&temp,v,20,Set==true)
+				//pc.Encode(&temp,v,ss.LayerSize,Set==true)
 				//&ss.InOneTsr.Values = temp
-				//pc.Encode(&ss.InOneTsr.Values,v,20,Set)
+				//pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,Set)
 
-				pc.Encode(&ss.InOneTsr.Values,v,20,false) //original command
+				pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,false) //original command
 				ly.ApplyExt(ss.InOneTsr)
 			}
 			
@@ -706,7 +712,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		}
 		if lnm == "Output" {
 			v := float32(pats.FloatVal1D(0))
-			pc.Encode(&ss.InTwoTsr.Values,v,20,false)
+			pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize,false)
 			ly.ApplyExt(ss.InTwoTsr) 
 	
 		}
@@ -1268,6 +1274,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	inp := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
 	chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
+	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 
 	pc := popcode.OneD{}//previously defined pc does not work here
 	pc.Defaults()
@@ -1315,6 +1322,15 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	chdecode := pc.Decode(ss.TmpValsCh)
 	dt.SetCellFloat("ChunkDecode", row, float64(chdecode))
 
+	pfc.UnitVals(&ss.TmpValsPFC, "Act")
+	for i := 0; i< ss.Stripes; i++ {
+		pfcdecode := pc.Decode(ss.TmpValsPFC[i*ss.LayerSize:(i+1)*ss.LayerSize])
+		stnm := "stripe"+string(i)
+		dt.SetCellFloat(stnm, row, float64(pfcdecode))
+	}
+
+
+
 	dt.SetCellString("Lesion", row, ss.Lesion)
 	dt.SetCellFloat("LesionProp",row,ss.LesionProp)
 	dt.SetCellString("LesionApplied",row,ss.LesionApplied)
@@ -1354,6 +1370,12 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		sch = append(sch, etable.Column{lnm, etensor.FLOAT64, ly.Shp.Shp, nil})
 	}
+
+	for i := 0; i< ss.Stripes; i++ {
+		stnm := "stripe"+string(i)
+		sch = append(sch,etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
+	}
+
 	sch = append(sch, etable.Schema{
 
 	{"OutDecode", etensor.FLOAT64, nil, nil}, //adds outdecode value to table
