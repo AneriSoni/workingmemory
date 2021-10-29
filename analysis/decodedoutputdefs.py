@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 import os
-sns.set()
+
+
+
+
 
 class Chunking():
     def __init__(self, file):
@@ -71,15 +73,95 @@ class Chunking():
         plt.xlabel('Diff between Input and Maintained')
         plt.ylabel('Diff between Input and Chunk')
         plt.title('Chunk Layer')
+        
 
 class Precision():
-    def __init__(self,file):
+    def __init__(self,file, stim = (0.4, 3.4)):
         df = pd.read_csv(file,'\s+')
         #df = pd.read_csv(file)
         self.df = df
+        self.stim = stim
         
-    def plot_sigma(self,files,savefile):
+    def create_dat(files, var, var_values): 
+        #i don't think I will use this.
+        #files to go through
+        #var - ex. gain/stries/lesion
+        #var_values - which variables to create separate keys in data table
+        
         dat = {}
+        for f in files:
+            self.var_extraction()
+            
+    def var_extraction():
+        #i don't think i will use this.
+        print('def not done')    
+            
+    
+    def gain(self,files,gains):
+        dat = {}
+        error_dat ={}
+        for f in files:
+            gain = f.split('Gain')[1].split('_')[1]
+            if gain in gains:
+                if gain in dat.keys():
+                    dat[gain]=dat[gain].append(pd.read_csv(f,sep='\s+'))
+                else:
+                    dat[gain] = pd.read_csv(f,sep='\s+')
+        for key in gains:
+            _,diffrecall = self.get_diffs(dat[key])
+            error_dat[key]=diffrecall
+        
+        self.error_dat = error_dat
+        self.gains = gains
+        
+    def plot_gain(self,savefile, bins = 10):
+        error_dat = self.error_dat
+        gains = self.gains
+        plots = len(gains)
+        i = 1
+
+        for key in gains:
+            plt.subplot(1,plots,i)
+            i+=1
+            plt.hist(error_dat[key], bins = 10)
+            plt.title('Gain: {}'.format(key))
+        #plt.suptitle('Errors With Different Precision')
+        plt.savefig(savefile)
+            
+            
+    def stripes(self,files,stripes):
+        dat ={}
+        error_dat = {}
+        for f in files:
+            st = f.split('_')[2].split('Stripes')[1]
+            if int(st) in stripes:
+                if st in dat.keys():
+                    dat[st]=dat[st].append(pd.read_csv(f,sep='\s+'))
+                else:
+                    dat[st] = pd.read_csv(f,sep='\s+')
+        for key in dat.keys():
+            _,diffrecall = self.get_diffs(dat[key])
+            error_dat[key] = diffrecall
+            
+        self.error_dat = error_dat
+        self.stries = stripes
+        
+    def plot_stripes(self,savefile):
+        error_dat = self.error_dat
+        stripes = self.stripes
+        plots = len(stripes)
+        i = 1
+        for key in error_dat.keys():
+            plt.subplot(2,4,i)
+            i+=1
+            plt.hist(error_dat[key])
+            plt.title('{} Stripes'.format(float(key)))
+            plt.savefig(savefile)
+            
+                
+    def sigma(self,files):
+        dat = {}
+        error_dat={}
         print('lower case sigma, if file is uppercase sigma, switch')
         for f in files:
             sig = f.split('.csv')[0].split('sigma')[1].split('_Base')[0]
@@ -88,14 +170,22 @@ class Precision():
                 dat[sig]=dat[sig].append(pd.read_csv(f,sep='\s+'))
             else:
                 dat[sig] = pd.read_csv(f,sep='\s+')
-        
-        plots = len(files)
-        i = 1
         for key in dat.keys():
             _,diffrecall = self.get_diffs(dat[key])
+            error_dat[key] = diffrecall
+        self.dat = dat
+        self.plots = len(files)
+        
+        
+    def plot_sigma(self,savefile):
+        error_dat = self.error_dat
+        plots = self.plots
+        #plots = len(files)
+        i = 1
+        for key in error_dat.keys():
             plt.subplot(1,6,i)
             #plt.hist(diffrecall,range = (-0.01,0.01))
-            plt.hist(diffrecall)
+            plt.hist(error_dat[key])
             plt.title('Sigma:{}'.format(float(key)))
             i+=1
         #plt.suptitle(('Difference in Precision on Test Trials (Target-Output), Threshold: {}',float(thres)))
@@ -103,8 +193,8 @@ class Precision():
         plt.tight_layout()
         #plt.show()
         plt.savefig(savefile)
-        
-    def plot_sigma2(self,files,savefile):
+    
+    def sigma2(self,files):
         print('give files of only 1 sigma and multiple threshold')
         print('will plot both the histograms and 1 graph with rew. threshold and variance of histograms')
         dat = {}
@@ -133,6 +223,14 @@ class Precision():
             #plt.hist(diffrecall)
             #plt.title('Threshold:{}'.format(float(key)))
             #i+=1
+        self.stds = stds
+        self.means = means
+        self.sorted_keys = sorted_keys
+        
+    def plot_sigma2(self,savefile):
+        stds = self.stds
+        means = self.means
+        sorted_keys = self.sorted_keys
         #plt.subplot(2,4,8)
         plt.subplot(2,1,1)
         plt.scatter(sorted_keys,stds)
@@ -144,7 +242,8 @@ class Precision():
         plt.title('Sigma: {}, Mean'.format(sig))
         plt.tight_layout()
         
-    def plot_sigma_best(self,files,sigma,savefile):
+    
+    def sigma_best(self,files,sigma):
         dat = {}
         for f in files:
             thres = f.split('Threhsold')[1].split('_')[0]
@@ -152,14 +251,19 @@ class Precision():
                 dat[thres]=dat[thres].append(pd.read_csv(f,sep='\s+'))
             else:
                 dat[thres] = pd.read_csv(f,sep='\s+')
-        
-        #plots = len(files) #if I want to plot each rew-threshold histogram separately.
-        #i = 1 
         each_rew = []
         for key in dat.keys():
             _,diffrecall = self.get_diffs(dat[key])
             each_rew.append(np.mean(diffrecall))
-        plt.scatter(list(dat.keys()),each_rew)
+        self.each_rew = each_rew
+        
+        
+    def plot_sigma_best(self,savefile):
+        
+        #plots = len(files) #if I want to plot each rew-threshold histogram separately.
+        #i = 1 
+
+        plt.scatter(list(dat.keys()),self.each_rew)
         plt.xlabel('Reward Threshold')
         plt.ylabel('Mean Error on Recall Trials')
         plt.title('Sigma:{}'.format(float(sigma)))
@@ -181,10 +285,12 @@ class Precision():
         decodeout_recall = df_recall['#OutDecode']
         target_recall = df_recall['#OutTarget']
 
-        
+        stim_diff = (self.stim[1]-self.stim[0])/2
         diff =np.array(decodeout)-np.array(target)
         self.alldiff = diff
         diffrecall =np.array(decodeout_recall)-np.array(target_recall)
+        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)
+        #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)/stim_diff*360 #degrees
         self.recalldiff = diffrecall
         return diff,diffrecall
         
@@ -207,9 +313,10 @@ class Precision():
         plt.title('Recall Test Trials')
         plt.suptitle('Difference in Precision on Test Trials (Target-Output)')
         plt.savefig(savefile)
-    
-    def plot_var_lesions(self,files,lesion_names,savefile):
+        
+    def var_lesions(self,files,lesion_names):
         dat = {}
+        error_dat = {}
         for l in lesion_names:
             for f in files:
                 if "Lesion"+l+"_" in f:
@@ -219,20 +326,32 @@ class Precision():
                         dat[l] = pd.read_csv(f,sep='\s+') 
         self.lesiondat = dat
         plots = len(lesion_names)
-        i = 1
         for key in dat.keys():
             _,diffrecall = self.get_diffs(dat[key])
+            error_dat[key]=diffrecall
+        self.error_dat = error_dat
+        
+    
+    def plot_var_lesions(self,savefile):
+        error_dat = self.error_dat
+        
+        i = 1
+        for key in error_dat.keys():
+
             plt.subplot(2,2,i)
             #plt.hist(diffrecall,range = (-0.01,0.01))
-            plt.hist(diffrecall)
+            plt.hist(error_dat[key])
             plt.title('Lesion:{}'.format(key))
             i+=1
+        plt.xlabel('Error Degrees')
+        plt.ylabel('Frequency')
         #plt.suptitle('Difference in Precision on Test Trials (Target-Output)')
         plt.tight_layout()
         plt.savefig(savefile)
     
-    def plot_var_lesionprop(self,files,lesion_name,lesion_props,savefile):
+    def var_lesionprop(self,files,lesion_name,lesion_props):
         dat = {}
+        error_dat = {}
         for l in lesion_props:
             for f in files:
                 if "LesionProp"+l+'_' in f:
@@ -241,18 +360,29 @@ class Precision():
                     else:
                         dat[l] = pd.read_csv(f,sep='\s+') 
         self.lesiondat = dat
-        plots = len(lesion_props)
-        i = 1
+    
         for key in dat.keys():
             _,diffrecall = self.get_diffs(dat[key])
-            plt.subplot(3,2,i)
+            error_dat[key] = diffrecall
+        self.error_dat = error_dat
+        self.lesion_props = lesion_props
+        
+    
+    def plot_var_lesionprop(self,savefile, bins = 45):
+        error_dat = self.error_dat
+        plots = len(self.lesion_props)
+        i = 1
+        for key in error_dat.keys():
+            plt.subplot(1,3,i)
             #plt.hist(diffrecall,range = (-0.01,0.01))
             #plt.hist(diffrecall,bins = 30, range = (-3,3))
-            plt.hist(diffrecall,bins = 30)
+            plt.hist(error_dat[key],bins = bins)
+            plt.ylim([0,175])
             plt.title('LesionProp:{}'.format(key))
             i+=1
+            
         #plt.suptitle('Difference in Precision on Test Trials (Target-Output)')
-        plt.suptitle("{} Lesions".format(lesion_name))
+        #plt.suptitle("{} Lesions".format(lesion_name))
         plt.tight_layout()
         plt.savefig(savefile)
     def plot_random_minus_fixed(self,files_random,files_fixed,lesion_name,lesion_props,savefile):
