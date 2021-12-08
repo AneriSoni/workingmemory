@@ -114,8 +114,11 @@ class Precision():
         self.error_dat = error_dat
         self.gains = gains
         
-    def plot_gain(self,savefile, bins = 10):
-        error_dat = self.error_dat
+    def plot_gain(self,savefile, bins = 10, data = None):
+        if data == None: 
+            error_dat = self.error_dat
+        else:
+            error_dat = data
         gains = self.gains
         plots = len(gains)
         i = 1
@@ -368,8 +371,11 @@ class Precision():
         self.lesion_props = lesion_props
         
     
-    def plot_var_lesionprop(self,savefile, bins = 45):
-        error_dat = self.error_dat
+    def plot_var_lesionprop(self,savefile, bins = 45, data = None):
+        if data == None: 
+            error_dat = self.error_dat
+        else: 
+            error_dat = data
         plots = len(self.lesion_props)
         i = 1
         for key in error_dat.keys():

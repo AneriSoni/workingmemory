@@ -229,16 +229,17 @@ var ParamSets = params.Sets{
 			{Sel: ".PFCFixedChunk", Desc: "Chunk -> PFC",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.6",
+					"Prjn.WtInit.Mean": "0.0",
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
 				}},
 			{Sel: ".PFCMntDChunk", Desc: "PFC MntD -> Chunk fixed",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.3",
+					"Prjn.WtInit.Mean": "0.2",
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
+					"Prjn.WtScale.Rel": "3",
 				}},
 
 		},
@@ -1888,7 +1889,8 @@ func (ss *Sim) CmdArgs() {
 	//ss.Init() //already ran once up there.
 	for _,v := range models {
 		//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-		ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
+		//ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
+		ss.Tag = "model"+strconv.Itoa(v)
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
