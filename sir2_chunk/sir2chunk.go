@@ -229,7 +229,7 @@ var ParamSets = params.Sets{
 			{Sel: ".PFCFixedChunk", Desc: "Chunk -> PFC",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.0",
+					"Prjn.WtInit.Mean": "0.8",
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
 				}},
@@ -239,7 +239,7 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Mean": "0.2",
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
-					"Prjn.WtScale.Rel": "3",
+					"Prjn.WtScale.Rel": "4",
 				}},
 
 		},
