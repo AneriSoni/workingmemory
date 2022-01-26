@@ -1837,9 +1837,10 @@ func (ss *Sim) CmdArgs() {
 //	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
+	fmt.Printf(ss.Tag)
 	ss.TrainRun()
 	ss.RunTestAll()
-	fmt.Printf(ss.Tag)
+	
 
 	if note != "" {
 		fmt.Printf("note: %s\n", note)
