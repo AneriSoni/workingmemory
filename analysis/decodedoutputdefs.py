@@ -76,11 +76,48 @@ class Chunking():
         
 
 class Precision():
-    def __init__(self,file, stim = (0.4, 3.4)):
-        df = pd.read_csv(file,'\s+')
-        #df = pd.read_csv(file)
-        self.df = df
+    def __init__(self, stim = (0.4, 3.4)):
+        #df = pd.read_csv(file,'\s+')
+        ##df = pd.read_csv(file)
+        #self.df = df
         self.stim = stim
+        
+    def get_diffs(self,df):
+        df_include= []
+        for i in df['$TrialName']:
+            if 'Recall' in i:
+                df_include.append('True')
+            else:
+                df_include.append('False')
+        df.index = df_include
+        df_recall = df.loc['True']
+
+        #pull out target and actual decoded output for recall and all trials
+        decodeout = df['#OutDecode']
+        target = df['#OutTarget']
+        decodeout_recall = df_recall['#OutDecode']
+        target_recall = df_recall['#OutTarget']
+
+        stim_diff = (self.stim[1]-self.stim[0])/2
+        diff =np.array(decodeout)-np.array(target)
+        self.alldiff = diff
+        diffrecall =np.array(decodeout_recall)-np.array(target_recall)
+        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)
+        #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)/stim_diff*360 #degrees
+        self.recalldiff = diffrecall
+        return diff,diffrecall
+    
+    def mult_models(self,files,sep = '\s+'):
+        #this is for plotting error histogram when you have multiple models and want them plotted in one graph 
+        dat = pd.DataFrame()
+        for f in files:
+            dat = dat.append(pd.read_csv(f,sep=sep))
+        self.dat = dat
+
+        _,diffrecall = self.get_diffs(dat)
+        self.diffrecall = diffrecall
+        return diffrecall
+    
         
     def create_dat(files, var, var_values): 
         #i don't think I will use this.
@@ -272,30 +309,6 @@ class Precision():
         plt.title('Sigma:{}'.format(float(sigma)))
         
             
-    def get_diffs(self,df):
-        df_include= []
-        for i in df['$TrialName']:
-            if 'Recall' in i:
-                df_include.append('True')
-            else:
-                df_include.append('False')
-        df.index = df_include
-        df_recall = df.loc['True']
-
-        #pull out target and actual decoded output for recall and all trials
-        decodeout = df['#OutDecode']
-        target = df['#OutTarget']
-        decodeout_recall = df_recall['#OutDecode']
-        target_recall = df_recall['#OutTarget']
-
-        stim_diff = (self.stim[1]-self.stim[0])/2
-        diff =np.array(decodeout)-np.array(target)
-        self.alldiff = diff
-        diffrecall =np.array(decodeout_recall)-np.array(target_recall)
-        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)
-        #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)/stim_diff*360 #degrees
-        self.recalldiff = diffrecall
-        return diff,diffrecall
         
 
     def plot_diffinperf(self,savefile):

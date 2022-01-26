@@ -124,7 +124,8 @@ var ParamSets = params.Sets{
 			{Sel: ".PFCFixed", Desc: "Input -> PFC",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
+					"Prjn.WtInit.Mean": "0.8", //turned off to check chunking
+					//"Prjn.WtInit.Mean": "0",	//only for chunking checking
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
 				}},
@@ -196,7 +197,12 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#InputToOutput", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.5",
+					"Prjn.WtScale.Rel": "0.5", //turned off just for chunking.
+
+					//"Prjn.Learn.Learn": "false", //only for checking chunking
+					//"Prjn.WtInit.Mean": "0",//only for checking chunking
+					//"Prjn.WtInit.Var":  "0",//only for checking chunking
+					
 				}},
 			{Sel: "#Hidden", Desc: "Basic params",
 				Params: params.Params{
@@ -239,8 +245,12 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Mean": "0.2",
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
-					"Prjn.WtScale.Rel": "4",
+					"Prjn.WtScale.Rel": "3.5",
 				}},
+			//{Sel: "#ChunkToOutput", Desc: "Chunk to Output, weaker", //only for checking chunking
+			//	Params: params.Params{//only for checking chunking
+			//		"Prjn.WtScale.Rel": "0.5",//only for checking chunking
+			//	}},//only for checking chunking
 
 		},
 	}},
@@ -456,7 +466,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no" 
 	
 	ss.LayerSize = 20
-	ss.Stripes = 2
+	ss.Stripes = 1
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -519,7 +529,9 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("PFCFixed")
 
 
-	net.ConnectLayers(inp, hid, full, emer.Forward)
+	net.ConnectLayers(inp, hid, full, emer.Forward) //turned off for checking chunking
+	//net.ConnectLayers(chunk, out, full, emer.Forward) //just for checking chunking 
+
 	net.ConnectLayers(ctrl, hid, full, emer.Forward)
 	net.BidirConnectLayers(hid, out, full)
 	//pj = net.ConnectLayers(pfcOutD, hid, full, emer.Forward)

@@ -1,3 +1,5 @@
+#outdated, do not use this anymore, included in decodedoutputdefs.py
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
