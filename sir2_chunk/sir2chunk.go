@@ -1837,9 +1837,7 @@ func (ss *Sim) CmdArgs() {
 //	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
-	fmt.Printf(ss.Tag)
-	ss.TrainRun()
-	ss.RunTestAll()
+
 	
 
 	if note != "" {
@@ -1901,15 +1899,15 @@ func (ss *Sim) CmdArgs() {
 
 	//}
 	
-	//models := []int{0, 1, 2, 3, 4}
+	models := []int{0, 1, 2, 3, 4}
 	//ss.Init() //already ran once up there.
-	//for _,v := range models {
+	for _,v := range models {
 	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
 	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
-	//	ss.Tag = "model"+strconv.Itoa(v)
-	//	fmt.Printf(ss.Tag)
-	//	ss.TrainRun()
-	//	ss.RunTestAll()
+		ss.Tag = "1Stripemodel"+strconv.Itoa(v)
+		fmt.Printf(ss.Tag)
+		ss.TrainRun()
+		ss.RunTestAll()
 
 //	}
 	
