@@ -1839,7 +1839,7 @@ func (ss *Sim) CmdArgs() {
 	ss.Init()
 	ss.TrainRun()
 	ss.RunTestAll()
-	print(tag)
+	fmt.Printf(ss.Tag)
 
 	if note != "" {
 		fmt.Printf("note: %s\n", note)
