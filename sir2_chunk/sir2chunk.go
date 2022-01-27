@@ -1909,7 +1909,7 @@ func (ss *Sim) CmdArgs() {
 		ss.TrainRun()
 		ss.RunTestAll()
 
-//	}
+	}
 	
 
 

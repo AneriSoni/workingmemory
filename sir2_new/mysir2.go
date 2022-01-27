@@ -283,6 +283,9 @@ type Sim struct {
 	LesionProp    float64   `inactive:"+" desc:"proportion of test trials to have a lesion"`
 	LesionApplied string      `inactive:"+" desc:"if lesion is actually applied"`
 	Folder	      string     `inactive:"+" desc:"folder for saving"`
+	LayerSize     int	`inactive:"+" desc:"layer size"`    
+	Stripes       int        `inactive:"+" desc:"number of pfc stripes"`   
+
 
 	// internal state - view:"-"
 	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -364,13 +367,13 @@ func (ss *Sim) ConfigInTsrs() { //need this to not have error nill pointer error
 
       if ss.InOneTsr == nil {
 
-         ss.InOneTsr = etensor.NewFloat32([]int{1, 20}, nil, nil)
+         ss.InOneTsr = etensor.NewFloat32([]int{1, ss.LayerSize}, nil, nil)
 
 }
 
       if ss.InTwoTsr == nil {
 
-         ss.InTwoTsr = etensor.NewFloat32([]int{1, 20}, nil, nil)
+         ss.InTwoTsr = etensor.NewFloat32([]int{1, ss.LayerSize}, nil, nil)
 
 }
 
@@ -420,6 +423,10 @@ func (ss *Sim) ConfigEnv() {
 	ss.Lesion = "None"
 	ss.LesionProp = 0
 	ss.LesionApplied = "no" 
+
+	ss.LayerSize = 20
+	ss.Stripes = 1
+	
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -428,10 +435,10 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	snc := da.(*rl.RWDaLayer)
 	snc.SetName("SNc")
 
-	inp := net.AddLayer2D("Input", 1, 20, emer.Input)
+	inp := net.AddLayer2D("Input", 1, ss.LayerSize, emer.Input)
 	ctrl := net.AddLayer2D("CtrlInput", 1, 5, emer.Input)
-	out := net.AddLayer2D("Output", 1, 20, emer.Target)
-	hid := net.AddLayer2D("Hidden", 20, 20, emer.Hidden)
+	out := net.AddLayer2D("Output", 1, ss.LayerSize, emer.Target)
+	hid := net.AddLayer2D("Hidden", ss.LayerSize, ss.LayerSize, emer.Hidden)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	//out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	out.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "Input", YAlign: relpos.Front, Space: 1})
@@ -440,12 +447,15 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
 	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, 20)
-	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 8, 1, 1, 1, 5, 1, 20)
+	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 8, 1, 1, 1, 5, 1, 20)
+	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", ss.Stripes, 1, 1, 1, 5, 1, ss.LayerSize)
 	_ = gpe
 	_ = gpi
 	_ = pfcMnt
 	_ = pfcMntD
 	_ = pfcOut
+
+	fmt.Printf("stripes %v",ss.Stripes)
 
 	cin := cini.(*pbwm.CINLayer)
 	cin.RewLays.Add(rew.Name(), rp.Name())
@@ -460,7 +470,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	fmin.Wrap = true
 
 	fmin2 := prjn.NewRect()
-	fmin2.Size.Set(1, 8)
+	//fmin2.Size.Set(1, 8)
+	fmin2.Size.Set(1, ss.Stripes)
 	fmin2.Scale.Set(1, 1)
 	fmin2.Wrap = true
 
@@ -648,9 +659,9 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 				//fmt.Printf("temp is %v", temp)
 				//pc.Encode(&temp,v,20,Set==true)
 				//&ss.InOneTsr.Values = temp
-				//pc.Encode(&ss.InOneTsr.Values,v,20,Set)
+				//pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,Set)
 
-				pc.Encode(&ss.InOneTsr.Values,v,20,false) //original command
+				pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,false) //original command
 				ly.ApplyExt(ss.InOneTsr)
 			}
 			
@@ -663,7 +674,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		}
 		if lnm == "Output" {
 			v := float32(pats.FloatVal1D(0))
-			pc.Encode(&ss.InTwoTsr.Values,v,20,false)
+			pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize,false)
 			ly.ApplyExt(ss.InTwoTsr) 
 	
 		}
@@ -1806,7 +1817,8 @@ func (ss *Sim) CmdArgs() {
 	models := []int{0, 1, 2, 3, 4}
 	//ss.Init() //already ran once up there.
 	for _,v := range models {
-		ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+		//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+		ss.Tag = "1Stripemodel"+strconv.Itoa(v)
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
