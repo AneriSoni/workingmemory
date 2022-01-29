@@ -425,7 +425,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no" 
 
 	ss.LayerSize = 20
-	ss.Stripes = 1
+	ss.Stripes = 2
 	
 }
 
