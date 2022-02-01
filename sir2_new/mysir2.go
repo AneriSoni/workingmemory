@@ -425,7 +425,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no" 
 
 	ss.LayerSize = 20
-	ss.Stripes = 2
+	ss.Stripes = 1
 	
 }
 
@@ -1814,7 +1814,7 @@ func (ss *Sim) CmdArgs() {
 
 	//}
 	
-	models := []int{0, 1, 2, 3, 4}
+	models := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	//ss.Init() //already ran once up there.
 	for _,v := range models {
 		//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
