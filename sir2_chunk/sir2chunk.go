@@ -1886,7 +1886,6 @@ func (ss *Sim) CmdArgs() {
 	flag.Parse()
 	ss.Init()
 
-	
 
 	if note != "" {
 		fmt.Printf("note: %s\n", note)
@@ -1931,7 +1930,7 @@ func (ss *Sim) CmdArgs() {
 	//fmt.Printf("%v", models)
 
 
-	if "experiment" == "Lesion" {
+	if ss.Experiment == "Lesion" {
 
 	//Lesion experiments 
 	props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1} //proportion of lesions
@@ -1948,7 +1947,7 @@ func (ss *Sim) CmdArgs() {
 	}
 
 
-	} else if "experiment" == "RewThres"{
+	} else if ss.Experiment == "RewThres"{
 
 
 	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
