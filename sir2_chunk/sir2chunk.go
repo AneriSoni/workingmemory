@@ -327,6 +327,8 @@ type Sim struct {
 	Folder	      string     `inactive:"+" desc:"folder for saving"`
 	LayerSize     int	`inactive:"+" desc:"layer size"`    
 	Stripes       int        `inactive:"+" desc:"number of pfc stripes"`   
+	Experiment    string     `inactive:"+" desc:"type of experiment to run"`  
+	NumModels     int        `inactive:"+" desc:"number of models to run"`  
 
 	// internal state - view:"-"
 	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -454,10 +456,16 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
+	
+	ss.pop_min = 0 //ring
+	ss.pop_max = 360 //ring
+	ss.pop_sigma = 0.15 //ring 
+	
 
-	ss.pop_min = 0
-	ss.pop_max = 3.8
-	ss.pop_sigma = 0.15 // need to optimize over this parameter
+
+	//ss.pop_min = 0 //no ring
+	//ss.pop_max = 3.8 //no ring
+	//ss.pop_sigma = 0.15 // need to optimize over this parameter //no ring
 
 	ss.RewThreshold = 5.5
 	
@@ -466,7 +474,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no" 
 	
 	ss.LayerSize = 20
-	ss.Stripes = 1
+	ss.Stripes = 2
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -691,10 +699,17 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	pc:= popcode.OneD{}
-	pc.Defaults()
+	//pc:= popcode.OneD{} //no ring
+	//pc.Defaults() //no ring
 	
-	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma))
+	//pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //no ring
+	
+	pc := popcode.Ring{} //ring
+	pc.Defaults() //ring 
+	pc.Min = ss.pop_min //ring
+	pc.Max = ss.pop_max //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
+	
 
 	lays := []string{"Input", "CtrlInput", "Output"}
 	for _, lnm := range lays {
@@ -730,7 +745,9 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 				//&ss.InOneTsr.Values = temp
 				//pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,Set)
 
-				pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,false) //original command
+				//pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,false) //original command //no ring
+				pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize) //ring 
+				
 				ly.ApplyExt(ss.InOneTsr)
 			}
 			
@@ -743,7 +760,8 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		}
 		if lnm == "Output" {
 			v := float32(pats.FloatVal1D(0))
-			pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize,false)
+			//pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize,false) //no ring
+			pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize) //ring
 			ly.ApplyExt(ss.InTwoTsr) 
 	
 		}
@@ -783,9 +801,15 @@ func (ss *Sim) ApplyReward(train bool) {
 	}
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 
-	pc := popcode.OneD{}//previously defined pc does not work here
-	pc.Defaults()
-	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two - lets see if it works
+	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
+	//pc.Defaults() //no ring
+	//pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two - lets see if it works //no ring
+	
+	pc := popcode.Ring{} //ring
+	pc.Defaults() //ring 
+	pc.Min = ss.pop_min //ring
+	pc.Max = ss.pop_max //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
 
 	//Actual Value
 	out.UnitVals(&ss.TmpVals,"ActM") //writes ActM value from the layer
@@ -1307,9 +1331,15 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
 	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 
-	pc := popcode.OneD{}//previously defined pc does not work here
-	pc.Defaults()
-	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two
+	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
+	//pc.Defaults() //no ring
+	//pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two //no ring
+	
+	pc := popcode.Ring{} //ring
+	pc.Defaults() //ring 
+	pc.Min = ss.pop_min //ring
+	pc.Max = ss.pop_max //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
 
 	trl := ss.TestEnv.Trial.Cur
 	row := trl
@@ -1850,6 +1880,8 @@ func (ss *Sim) CmdArgs() {
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
 	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 2, "threshold for rew in sir2_env")
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
+	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
+	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
 //	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
@@ -1891,42 +1923,63 @@ func (ss *Sim) CmdArgs() {
 		fmt.Printf("Saving final weights per run\n")
 	}
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
+	
+	models := make([]int, ss.NumModels)
+	for i:= 0; i < ss.NumModels; i++ {
+	    models[i] = i
+	}
+	//fmt.Printf("%v", models)
 
-	
-	//props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1}
-	//models := []int{0, 1, 2, 3, 4}
-	
-	//props := []float64{0}
-	//models := []int{0, 1, 2, 3, 4}
-	//for _,w := range props {
-	
-		//ss.LesionProp = w
-		//fmt.Printf("LesionProps is %v",w)
-		//ss.Init() //right place to init
-		//for _,v := range models {
-			//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			//fmt.Printf(ss.Tag)
-			////ss.Init() //no longer the right place to init. - get same random seed
-			//ss.TrainRun()
-			//ss.RunTestAll()
 
-	//}
-	
+	if "experiment" == "Lesion" {
 
-	//}
+	//Lesion experiments 
+	props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1} //proportion of lesions
+	for _,w := range props {
+		ss.LesionProp = w
+		fmt.Printf("LesionProps is %v",w)
+
+		for _,v := range models {
+			ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+			ss.RunTestAll()
+		}
+	}
+
+
+	} else if "experiment" == "RewThres"{
+
+
+	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
 	
-	models := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	//ss.Init() //already ran once up there.
+	for _,w := range RewThresholds {
+		
+		ss.RewThreshold = w
+		fmt.Printf("reward threshold is %v",w)
+		for _,v := range models {
+	
+			ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+			fmt.Printf(ss.Tag)
+	
+			ss.TrainRun()
+			ss.RunTestAll()
+
+			}
+	}
+	} else {
+
 	for _,v := range models {
 	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
 	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
-		ss.Tag = "1Stripemodel"+strconv.Itoa(v)
+		ss.Tag = "model"+strconv.Itoa(v)
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
-
+	}
 	}
 	
+
 
 
 
@@ -1946,26 +1999,6 @@ func (ss *Sim) CmdArgs() {
 	
 
 
-//	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
-//	models := []int{0, 1, 2, 3, 4}
-//	
-//	for _,w := range RewThresholds {
-//		
-//		ss.RewThreshold = w
-//		fmt.Printf("reward threshold is %v",w)
-//		for _,v := range models {
-//	
-//			//fmt.Printf("model %v", v)
-//			ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
-//			fmt.Printf(ss.Tag)
-//	
-//			ss.TrainRun()
-//			ss.RunTestAll()
-//
-//			}
-//	}
-//
-//
-//	//fmt.Printf("sigma %v",ss.pop_sigma)
-//
+
+
 }
