@@ -1787,6 +1787,8 @@ func (ss *Sim) CmdArgs() {
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
 	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 5.5, "threshold for rew in sir2_env")
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
+	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
+	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
 	flag.Parse()
 	ss.Init()
 
@@ -1827,47 +1829,73 @@ func (ss *Sim) CmdArgs() {
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
 
 	
-	//props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1}
-	//models := []int{0, 1, 2, 3, 4}
-	
-	//props := []float64{0}
-	//models := []int{0, 1, 2, 3, 4}
-	//for _,w := range props {
-	
-		//ss.LesionProp = w
-		//fmt.Printf("LesionProps is %v",w)
-		//ss.Init() //right place to init
-		//for _,v := range models {
-			//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			//fmt.Printf(ss.Tag)
-			////ss.Init() //no longer the right place to init. - get same random seed
-			//ss.TrainRun()
-			//ss.RunTestAll()
+	models := make([]int, ss.NumModels)
+	for i:= 0; i < ss.NumModels; i++ {
+	    models[i] = i
+	}
+	//fmt.Printf("%v", models)
 
-	//}
-	
 
-	//}
+	if ss.Experiment == "Lesion" {
+
+	//Lesion experiments 
+	props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1} //proportion of lesions
+	for _,w := range props {
+		ss.LesionProp = w
+		fmt.Printf("LesionProps is %v",w)
+
+		for _,v := range models {
+			ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+			ss.RunTestAll()
+		}
+	}
+
+
+	} else if ss.Experiment == "RewThres"{
+
+
+	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
 	
-	models := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	//ss.Init() //already ran once up there.
+	for _,w := range RewThresholds {
+		
+		ss.RewThreshold = w
+		fmt.Printf("reward threshold is %v",w)
+		for _,v := range models {
+	
+			ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+			fmt.Printf(ss.Tag)
+	
+			ss.TrainRun()
+			ss.RunTestAll()
+
+			}
+	}
+	} else {
+
 	for _,v := range models {
-		//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-		ss.Tag = "1Stripemodel"+strconv.Itoa(v)
+	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
+		ss.Tag = "model"+strconv.Itoa(v)
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
-
+	}
 	}
 	
 
 
 
-//	//used to optimize reward threshold.
-//
+
+	//used to optimize reward threshold.
+
 //	models := []int{0, 1, 2, 3, 4}
+
+	
 //	for _,v := range models {
-//		ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+//	//	ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
+//		ss.Tag = "model"+strconv.Itoa(v)+ss.Tag
 //		fmt.Printf(ss.Tag)
 //		ss.TrainRun()
 //		ss.RunTestAll()
@@ -1876,26 +1904,4 @@ func (ss *Sim) CmdArgs() {
 	
 
 
-//	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
-//	models := []int{0, 1, 2, 3, 4}
-//	
-//	for _,w := range RewThresholds {
-//		
-//		ss.RewThreshold = w
-//		fmt.Printf("reward threshold is %v",w)
-//		for _,v := range models {
-//	
-//			//fmt.Printf("model %v", v)
-//			ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
-//			fmt.Printf(ss.Tag)
-//	
-//			ss.TrainRun()
-//			ss.RunTestAll()
-//
-//			}
-//	}
-//
-//
-//	//fmt.Printf("sigma %v",ss.pop_sigma)
-//
 }
