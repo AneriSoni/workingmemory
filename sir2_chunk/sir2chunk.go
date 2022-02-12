@@ -1878,7 +1878,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Lesion, "Lesion","None", "lesion type")
 	flag.Float64Var(&ss.LesionProp, "LesionProp",0,"proportion of test trials with lesion")
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
-	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 2, "threshold for rew in sir2_env")
+	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 5.5, "threshold for rew in sir2_env")
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
 	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
 	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")

@@ -186,7 +186,8 @@ func (ev *SIREnv) StepSIR() {
 	//ev.Stim = rand.Float64()*float64(3)
 	if ev.StimType == "Cont" {
 		//ev.Stim = 0.3+rand.Float64()*float64(ev.NStim-1) 
-		ev.Stim = 0.4+rand.Float64()*float64(3) 
+		//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+		ev.Stim = rand.Float64()*float64(360) //ring
 
 	}
 	if ev.StimType == "Fixed" {

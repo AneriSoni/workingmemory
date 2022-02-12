@@ -284,7 +284,9 @@ type Sim struct {
 	LesionApplied string      `inactive:"+" desc:"if lesion is actually applied"`
 	Folder	      string     `inactive:"+" desc:"folder for saving"`
 	LayerSize     int	`inactive:"+" desc:"layer size"`    
-	Stripes       int        `inactive:"+" desc:"number of pfc stripes"`   
+	Stripes       int        `inactive:"+" desc:"number of pfc stripes"`
+	Experiment    string     `inactive:"+" desc:"type of experiment to run"`  
+	NumModels     int        `inactive:"+" desc:"number of models to run"`     
 
 
 	// internal state - view:"-"
@@ -414,9 +416,16 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
 
-	ss.pop_min = 0
-	ss.pop_max = 3.8
-	ss.pop_sigma = 0.15 // need to optimize over this parameter
+	ss.pop_min = 0 //ring
+	ss.pop_max = 360 //ring
+	ss.pop_sigma = 0.15 //ring 
+	
+
+
+	//ss.pop_min = 0 //no ring
+	//ss.pop_max = 3.8 //no ring
+	//ss.pop_sigma = 0.15 // need to optimize over this parameter //no ring
+
 
 	ss.RewThreshold = 5.5 //changing this wont work - need to change in the buttom - tag
 	
@@ -425,7 +434,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no" 
 
 	ss.LayerSize = 20
-	ss.Stripes = 1
+	ss.Stripes = 2
 	
 }
 
@@ -622,10 +631,19 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	pc:= popcode.OneD{}
-	pc.Defaults()
+	//pc:= popcode.OneD{} //no ring
+	//pc.Defaults() //no ring
 	
-	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma))
+	//pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //no ring
+	
+	pc := popcode.Ring{} //ring
+	pc.Defaults() //ring 
+	pc.Min = ss.pop_min //ring
+	pc.Max = ss.pop_max //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
+
+
+
 
 	lays := []string{"Input", "CtrlInput", "Output"}
 	for _, lnm := range lays {
@@ -661,7 +679,10 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 				//&ss.InOneTsr.Values = temp
 				//pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,Set)
 
-				pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,false) //original command
+
+				//pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize,false) //original command //no ring
+				pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize) //ring 
+
 				ly.ApplyExt(ss.InOneTsr)
 			}
 			
@@ -674,7 +695,8 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		}
 		if lnm == "Output" {
 			v := float32(pats.FloatVal1D(0))
-			pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize,false)
+			//pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize,false) //no ring
+			pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize) //ring
 			ly.ApplyExt(ss.InTwoTsr) 
 	
 		}
@@ -714,9 +736,15 @@ func (ss *Sim) ApplyReward(train bool) {
 	}
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 
-	pc := popcode.OneD{}//previously defined pc does not work here
-	pc.Defaults()
-	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two - lets see if it works
+	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
+	//pc.Defaults() //no ring
+	//pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two - lets see if it works //no ring
+	
+	pc := popcode.Ring{} //ring
+	pc.Defaults() //ring 
+	pc.Min = ss.pop_min //ring
+	pc.Max = ss.pop_max //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
 
 	//Actual Value
 	out.UnitVals(&ss.TmpVals,"ActM") //writes ActM value from the layer
@@ -1234,9 +1262,16 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	epc := ss.TestEnv.Epoch.Prv // this is triggered by increment so use previous value
 	
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
-	pc := popcode.OneD{}//previously defined pc does not work here
-	pc.Defaults()
-	pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two
+
+	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
+	//pc.Defaults() //no ring
+	//pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two //no ring
+	
+	pc := popcode.Ring{} //ring
+	pc.Defaults() //ring 
+	pc.Min = ss.pop_min //ring
+	pc.Max = ss.pop_max //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
 
 	trl := ss.TestEnv.Trial.Cur
 	row := trl

@@ -76,7 +76,8 @@ class Chunking():
         
 
 class Precision():
-    def __init__(self, stim = (0.4, 3.4)):
+    def __init__(self, stim = (0, 360)):
+        #stim = (0.4, 3.4)
         #df = pd.read_csv(file,'\s+')
         ##df = pd.read_csv(file)
         #self.df = df
@@ -101,8 +102,11 @@ class Precision():
         stim_diff = (self.stim[1]-self.stim[0])/2
         diff =np.array(decodeout)-np.array(target)
         self.alldiff = diff
+        
         diffrecall =np.array(decodeout_recall)-np.array(target_recall)
-        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)
+        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version
+        #diffrecall = np.mod(diffrecall, stim_diff)  #this is wrong because the errors are from 0 to 360 instead of centered at 0.
+        
         #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)/stim_diff*360 #degrees
         self.recalldiff = diffrecall
         return diff,diffrecall
