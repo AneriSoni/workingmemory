@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 
 	"github.com/emer/emergent/env"
@@ -52,6 +53,8 @@ type SIREnv struct {
 	Trial     env.Ctr         `view:"inline" desc:"trial is the step counter within epoch"`
 	StimType  string		 `desc:"continuous stimulus or fixed"`
 
+	MinDist   float64          `desc:"minimum distance between two stimuli"`		
+	MaxDist   float64	   `desc:"maximum distance between two simuli"`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -67,6 +70,8 @@ func (ev *SIREnv) SetNStim(n int) {
 	if ev.RewVal == 0 {
 		ev.RewVal = 1
 	}
+	ev.MinDist = 0 
+	ev.MaxDist = 45
 }
 
 func (ev *SIREnv) Validate() error {
@@ -192,6 +197,66 @@ func (ev *SIREnv) StepSIR() {
 	}
 	if ev.StimType == "Fixed" {
 		ev.Stim = float64(rand.Intn(ev.NStim))
+
+	}
+	
+	dist_met := "false"
+	
+
+
+	for dist_met == "false" {
+		if ev.Act == Ignore{
+			dist_met = "true"
+		}
+		if ev.Act == Recall1{
+			dist_met = "true"
+		}
+		if ev.Act == Recall2{
+			dist_met = "true"
+		}
+		if ev.Act == Store1 && ev.Maint2 >=0 { //if current trial is store1 and there is something already for stimulus 2
+
+			if math.Abs(ev.Maint2 - ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2 - ev.Stim) > ev.MinDist{
+				dist_met = "true"
+			} else {
+				if ev.StimType == "Cont" {
+					//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+					ev.Stim = rand.Float64()*float64(360) //ring 	
+				}
+				if ev.StimType == "Fixed" {
+					ev.Stim = float64(rand.Intn(ev.NStim))
+
+				}
+			
+			}
+		}
+
+
+		if ev.Act == Store2 && ev.Maint1 >=0 { //if current trial is store2 and there is something already for stimulus 1
+			if math.Abs(ev.Maint1 - ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1 - ev.Stim) > ev.MinDist{
+				dist_met = "true"
+			} else {
+				if ev.StimType == "Cont" {
+					//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+					ev.Stim = rand.Float64()*float64(360) //ring 	
+				}
+				if ev.StimType == "Fixed" {
+					ev.Stim = float64(rand.Intn(ev.NStim))
+
+				}
+			
+			}
+		}
+		if ev.Act == Store1 && ev.Maint2 <0 { //current trial is store1 and there is nothing in stimulus 2
+			dist_met = "true"
+		}
+	
+		if ev.Act == Store2 && ev.Maint1 <0 { //current trial is store2 and there is nothing in stimulus 1
+			dist_met = "true"
+		}
+
+
+
 
 	}
 	
