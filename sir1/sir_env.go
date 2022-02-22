@@ -38,8 +38,8 @@ type SIREnv struct {
 	RewVal   float32         `desc:"value for reward, based on whether model output = target"`
 	NoRewVal float32         `desc:"value for non-reward"`
 	Act      Actions         `desc:"current action"`
-	Stim     int             `desc:"current stimulus"`
-	Maint    int             `desc:"current stimulus being maintained"`
+	Stim     float64             `desc:"current stimulus"`
+	Maint    float64             `desc:"current stimulus being maintained"`
 	Input    etensor.Float64 `desc:"input pattern with action + stim"`
 	CtrlInput etensor.Float64 `desc:"output input pattern with action"`
 	Output   etensor.Float64 `desc:"output pattern of what to respond"`
@@ -47,6 +47,7 @@ type SIREnv struct {
 	Run      env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
 	Epoch    env.Ctr         `view:"inline" desc:"number of times through Seq.Max number of sequences"`
 	Trial    env.Ctr         `view:"inline" desc:"trial is the step counter within epoch"`
+	StimType  string		 `desc:"continuous stimulus or fixed"`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -62,6 +63,7 @@ func (ev *SIREnv) SetNStim(n int) {
 	if ev.RewVal == 0 {
 		ev.RewVal = 1
 	}
+
 }
 
 func (ev *SIREnv) Validate() error {
@@ -110,8 +112,8 @@ func (ev *SIREnv) StimStr(stim int) string {
 
 // String returns the current state as a string
 func (ev *SIREnv) String() string {
-	return fmt.Sprintf("%v_%v_mnt_%v_rew_%v", ev.Act, ev.StimStr(ev.Stim), ev.StimStr(ev.Maint), ev.Reward.Values[0])
-}
+	//return fmt.Sprintf("%v_%v_mnt_%v_rew_%v", ev.Act, ev.StimStr(ev.Stim), ev.StimStr(ev.Maint), ev.Reward.Values[0])
+	return fmt.Sprintf("%v_%v_mnt_%v_rew_%v", ev.Act, ev.Stim, ev.Maint, ev.Reward.Values[0])}
 
 func (ev *SIREnv) Init(run int) {
 	ev.Run.Scale = env.Run
@@ -149,21 +151,25 @@ func (ev *SIREnv) SetState() {
 }
 
 // SetReward sets reward based on network's output
-func (ev *SIREnv) SetReward(netout int) bool {
-	cor := ev.Stim // already correct
-	rw := netout == cor
-	//fmt.Printf("cor is %v",cor)
-	if rw {
-		ev.Reward.Values[0] = float64(ev.RewVal)
-	} else {
-		ev.Reward.Values[0] = float64(ev.NoRewVal)
-	}
-	return rw
-}
+//func (ev *SIREnv) SetReward(netout int) bool {
+//	cor := ev.Stim // already correct
+//	rw := netout == cor
+//	//fmt.Printf("cor is %v",cor)
+//	if rw {
+//		ev.Reward.Values[0] = float64(ev.RewVal)
+//	} else {
+//		ev.Reward.Values[0] = float64(ev.NoRewVal)
+//	}
+//	return rw
+//}
 
-func (ev *SIREnv) SetRewardThres(netout float64) bool {
+
+
+
+func (ev *SIREnv) SetRewardThres(netout float64, threshold float64) bool {
 	//cor := ev.Stim // already correct
-	threshold := float64(1)
+	//threshold := float64(1)
+	//here netout is the differnece between the decoded input and decoded output.
 	rw := netout <= threshold
 	if rw {
 		ev.Reward.Values[0] = float64(ev.RewVal)
@@ -172,8 +178,6 @@ func (ev *SIREnv) SetRewardThres(netout float64) bool {
 	}
 	return rw
 }
-
-
 
 
 // Step the SIR task
@@ -188,7 +192,19 @@ func (ev *SIREnv) StepSIR() {
 		}
 		break
 	}
-	ev.Stim = rand.Intn(ev.NStim)
+	//ev.Stim = rand.Intn(ev.NStim)
+
+	if ev.StimType == "Cont" {
+		//ev.Stim = 0.3+rand.Float64()*float64(ev.NStim-1+0.3)
+		//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+		ev.Stim = rand.Float64()*float64(360) //ring 	
+	}
+	if ev.StimType == "Fixed" {
+		ev.Stim = float64(rand.Intn(ev.NStim))
+
+	}
+
+
 	switch ev.Act {
 	case Store:
 		ev.Maint = ev.Stim
