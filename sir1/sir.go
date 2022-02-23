@@ -1919,8 +1919,8 @@ func (ss *Sim) CmdArgs() {
 
 	for _,v := range models {
 	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
-		ss.Tag = "model"+strconv.Itoa(v)
+		ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
+		//ss.Tag = "model"+strconv.Itoa(v)
 		fmt.Printf(ss.Tag)
 		ss.TrainRun()
 		ss.RunTestAll()
