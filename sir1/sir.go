@@ -96,24 +96,24 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
 				}},
-			{Sel: "#RWPredToSNc", Desc: "Fixed strong",
-				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "1",
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.WtInit.Sym":  "false",
-				}},
+			//{Sel: "#RWPredToSNc", Desc: "Fixed strong", //not in new
+			//	Params: params.Params{
+			//		"Prjn.Learn.Learn": "false",
+			//		"Prjn.WtInit.Mean": "1",
+			//		"Prjn.WtInit.Var":  "0",
+			//		"Prjn.WtInit.Sym":  "false",
+			//	}},
 			{Sel: "#Rew", Desc: "Reward layer -- no clamp limits",
 				Params: params.Params{
 					"Layer.Act.Clamp.Range.Min": "-1",
 					"Layer.Act.Clamp.Range.Max": "1",
 				}},
-			{Sel: ".PFCToDeep", Desc: "PFC -> Deep consistent wt",
-				Params: params.Params{
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.WtInit.Sym":  "false",
-				}},
+			//{Sel: ".PFCToDeep", Desc: "PFC -> Deep consistent wt", //not in new
+			//	Params: params.Params{
+			//		"Prjn.WtInit.Mean": "0.8",
+			//		"Prjn.WtInit.Var":  "0",
+			//		"Prjn.WtInit.Sym":  "false",
+			//	}},
 			{Sel: ".PFCFmDeep", Desc: "PFC Deep -> PFC fixed",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
@@ -139,45 +139,74 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
 				}},
-			{Sel: ".PFCRand", Desc: "Input -> PFC",
-				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0.2",
-					"Prjn.WtInit.Sym":  "false",
-				}},
+			//{Sel: ".PFCRand", Desc: "Input -> PFC", //not in new 
+			//	Params: params.Params{
+			//		"Prjn.Learn.Learn": "false",
+			//		"Prjn.WtInit.Mean": "0.8",
+			//		"Prjn.WtInit.Var":  "0.2",
+			//		"Prjn.WtInit.Sym":  "false",
+			//	}},
 			{Sel: ".MatrixPrjn", Desc: "Matrix learning",
 				Params: params.Params{
 					"Prjn.Learn.Lrate": "0.04",
 					"Prjn.WtInit.Var":  "0.1",
+					"Prjn.Trace.GateNoGoPosLR": "1",    // 0.1 default//new
+					"Prjn.Trace.NotGatedLR":    "0.7",  // 0.7 default//new
+					"Prjn.Trace.Decay":         "1.0",  // 1.0 default//new
+					"Prjn.Trace.AChDecay":      "0.0",  // not useful even at .1, surprising..//new
+					"Prjn.Trace.Deriv":         "true", // true default, better than false//new
 				}},
 			{Sel: "MatrixLayer", Desc: "exploring these options",
 				Params: params.Params{
-					"Layer.Act.XX1.Gain":       "100",
-					"Layer.Inhib.Layer.Gi":     "1.9",
-					"Layer.Inhib.Layer.FB":     "0.5",
-					"Layer.Inhib.Pool.On":      "true",
-					"Layer.Inhib.Pool.Gi":      "2.1", // def 1.9
-					"Layer.Inhib.Pool.FB":      "0",
-					"Layer.Inhib.Self.On":      "true",
-					"Layer.Inhib.Self.Gi":      "0.4", // def 0.3
-					"Layer.Inhib.ActAvg.Init":  "0.05",
-					"Layer.Inhib.ActAvg.Fixed": "true",
+					//"Layer.Act.XX1.Gain":       "100", //old
+					//"Layer.Inhib.Layer.Gi":     "1.9",//old
+					//"Layer.Inhib.Layer.FB":     "0.5",//old
+					//"Layer.Inhib.Pool.On":      "true",//old
+					//"Layer.Inhib.Pool.Gi":      "2.1", // def 1.9//old
+					//"Layer.Inhib.Pool.FB":      "0",//old
+					//"Layer.Inhib.Self.On":      "true",//old
+					//"Layer.Inhib.Self.Gi":      "0.4", // def 0.3//old
+					//"Layer.Inhib.ActAvg.Init":  "0.05",//old
+					//"Layer.Inhib.ActAvg.Fixed": "true",//old
+
+					"Layer.Act.XX1.Gain":       "100",//new
+					"Layer.Inhib.Layer.Gi":     "2.2", // 2.2 > 1.8 > 2.4//new
+					"Layer.Inhib.Layer.FB":     "1",   // 1 > .5//new
+					"Layer.Inhib.Pool.On":      "true",//new
+					"Layer.Inhib.Pool.Gi":      "2.1", // def 1.9//new
+					"Layer.Inhib.Pool.FB":      "0",//new
+					"Layer.Inhib.Self.On":      "true",//new
+					"Layer.Inhib.Self.Gi":      "0.4", // def 0.3//new
+					"Layer.Inhib.ActAvg.Init":  "0.05",//new
+					"Layer.Inhib.ActAvg.Fixed": "true",//new
 				}},
 			{Sel: "#GPiThal", Desc: "defaults also set automatically by layer but included here just to be sure",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":     "1.8",
-					"Layer.Inhib.Layer.FB":     "0.5",
+					//all old
+					//"Layer.Inhib.Layer.Gi":     "1.8",
+					//"Layer.Inhib.Layer.FB":     "0.5",
+					//"Layer.Inhib.Pool.On":      "false",
+					//"Layer.Inhib.ActAvg.Init":  ".2",
+					//"Layer.Inhib.ActAvg.Fixed": "true",
+					//"Layer.Act.Dt.GTau":        "3",
+					//"Layer.Gate.NoGo":          "1",
+					//"Layer.Gate.Thr":           "0.2",
+
+					//below: all new
+					"Layer.Inhib.Layer.Gi":     "1.8", // 1.8 > 2.0
+					"Layer.Inhib.Layer.FB":     "1",   // 1.0 > 0.5
 					"Layer.Inhib.Pool.On":      "false",
 					"Layer.Inhib.ActAvg.Init":  ".2",
 					"Layer.Inhib.ActAvg.Fixed": "true",
 					"Layer.Act.Dt.GTau":        "3",
-					"Layer.Gate.NoGo":          "1",
-					"Layer.Gate.Thr":           "0.2",
+					"Layer.Gate.GeGain":        "3",
+					"Layer.Gate.NoGo":          "1.25", // was 1 default
+					"Layer.Gate.Thr":           "0.25", // .2 default
 				}},
 			{Sel: "#GPeNoGo", Desc: "GPe is a regular layer -- needs special params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":     "2.2",
+					//"Layer.Inhib.Layer.Gi":     "2.2", //old
+					"Layer.Inhib.Layer.Gi":     "2.4", //new
 					"Layer.Inhib.Layer.FB":     "0.5",
 					"Layer.Inhib.Layer.FBTau":  "3", // otherwise a bit jumpy
 					"Layer.Inhib.Pool.On":      "false",
@@ -219,6 +248,11 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Act.Clamp.Range.Min": "-1",
 					"Layer.Act.Clamp.Range.Max": "1",
+				}},
+			{Sel: "#RWPred", Desc: "keep it guessing",
+				Params: params.Params{
+					"Layer.PredRange.Min": "0.05", // single most important param!  was .01 -- need penalty..
+					"Layer.PredRange.Max": "0.95",
 				}},
 		},
 	}},
@@ -423,6 +457,8 @@ func (ss *Sim) ConfigEnv() {
 	//ss.pop_min = -0.01 //no ring
 	//ss.pop_max = 3.01 //no ring
 	//ss.pop_sigma = 0.25 //no ring
+
+	ss.RewThreshold = 5.5
 
 	ss.Lesion = "None"
 	ss.LesionProp = 0
