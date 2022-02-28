@@ -498,7 +498,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no" 
 	
 	ss.LayerSize = 20
-	ss.Stripes = 2
+	ss.Stripes = 1
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {

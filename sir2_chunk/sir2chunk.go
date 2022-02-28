@@ -474,7 +474,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no" 
 	
 	ss.LayerSize = 20
-	ss.Stripes = 2
+	ss.Stripes = 3
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -547,8 +547,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("MatrixPrjn")
 	pj = net.ConnectLayersPrjn(ctrl, mtxNoGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
-	//pj = net.ConnectLayers(inp, pfcMnt, fmintop, emer.Forward) //hybrid model
-	pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward) //original model						
+	pj = net.ConnectLayers(inp, pfcMnt, fmintop, emer.Forward) //hybrid model
+	//pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward) //original model						
 	pj.SetClass("PFCFixed")
 
 
@@ -566,10 +566,11 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
 	pj = net.ConnectLayers(inp,chunk,fmin, emer.Forward)
-	pj=net.ConnectLayers(pfcMntD,chunk,fmin2,emer.Forward)
+	//pj=net.ConnectLayers(pfcMntD,chunk,fmin2,emer.Forward) //original model
+	pj=net.ConnectLayers(pfcMntD,chunk,fminbot,emer.Forward) //hybrid model
 	pj.SetClass("PFCMntDChunk")
-	//pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
-	pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
+	pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
+	//pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
 	pj.SetClass("PFCFixedChunk")
 
 
