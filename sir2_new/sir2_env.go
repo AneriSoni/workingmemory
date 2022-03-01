@@ -41,9 +41,9 @@ type SIREnv struct {
 	RewVal    float32         `desc:"value for reward, based on whether model output = target"`
 	NoRewVal  float32         `desc:"value for non-reward"`
 	Act       Actions         `desc:"current action"`
-	Stim      float64             `desc:"current stimulus"`
-	Maint1    float64             `desc:"current stimulus being maintained"`
-	Maint2    float64             `desc:"current stimulus being maintained"`
+	Stim      float64         `desc:"current stimulus"`
+	Maint1    float64         `desc:"current stimulus being maintained"`
+	Maint2    float64         `desc:"current stimulus being maintained"`
 	Input     etensor.Float64 `desc:"stimulus input pattern"`
 	CtrlInput etensor.Float64 `desc:"input pattern with action"`
 	Output    etensor.Float64 `desc:"output pattern of what to respond"`
@@ -51,10 +51,11 @@ type SIREnv struct {
 	Run       env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
 	Epoch     env.Ctr         `view:"inline" desc:"number of times through Seq.Max number of sequences"`
 	Trial     env.Ctr         `view:"inline" desc:"trial is the step counter within epoch"`
-	StimType  string		 `desc:"continuous stimulus or fixed"`
+	StimType  string          `desc:"continuous stimulus or fixed"`
 
-	MinDist   float64          `desc:"minimum distance between two stimuli"`		
-	MaxDist   float64	   `desc:"maximum distance between two simuli"`
+	StimDist string  `desc:"true or false, if the distance between stimuli should be constrianed"`
+	MinDist  float64 `desc:"minimum distance between two stimuli"`
+	MaxDist  float64 `desc:"maximum distance between two simuli"`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -70,8 +71,8 @@ func (ev *SIREnv) SetNStim(n int) {
 	if ev.RewVal == 0 {
 		ev.RewVal = 1
 	}
-	ev.MinDist = 0 
-	ev.MaxDist = 45
+	//ev.MinDist = 0 //defined in the main go file
+	//ev.MaxDist = 45
 }
 
 func (ev *SIREnv) Validate() error {
@@ -133,14 +134,13 @@ func (ev *SIREnv) SetState() {
 		ev.Input.Values[0] = float64(ev.Stim)
 	}
 	if ev.Act == Recall1 || ev.Act == Recall2 {
-		ev.Input.Values[0]=-999
+		ev.Input.Values[0] = -999
 	}
 
 	ev.Output.SetZeros()
-	ev.Output.Values[0]=float64(ev.Stim)
+	ev.Output.Values[0] = float64(ev.Stim)
 	//ev.Output.Values[ev.Stim] = 1
 }
-
 
 //no point in keeping - netout here is int, but we have float64
 // SetReward sets reward based on network's output
@@ -190,77 +190,72 @@ func (ev *SIREnv) StepSIR() {
 	//ev.Stim = (float64(rand.Intn(ev.NStim))+rand.Float64())
 	//ev.Stim = rand.Float64()*float64(3)
 	if ev.StimType == "Cont" {
-		//ev.Stim = 0.3+rand.Float64()*float64(ev.NStim-1) 
+		//ev.Stim = 0.3+rand.Float64()*float64(ev.NStim-1)
 		//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-		ev.Stim = rand.Float64()*float64(360) //ring
+		ev.Stim = rand.Float64() * float64(360) //ring
 
 	}
 	if ev.StimType == "Fixed" {
 		ev.Stim = float64(rand.Intn(ev.NStim))
 
 	}
-	
-	dist_met := "false"
-	
 
+	if ev.StimDist == "true" {
+		dist_met := "false"
 
-	for dist_met == "false" {
-		if ev.Act == Ignore{
-			dist_met = "true"
-		}
-		if ev.Act == Recall1{
-			dist_met = "true"
-		}
-		if ev.Act == Recall2{
-			dist_met = "true"
-		}
-		if ev.Act == Store1 && ev.Maint2 >=0 { //if current trial is store1 and there is something already for stimulus 2
-
-			if math.Abs(ev.Maint2 - ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2 - ev.Stim) > ev.MinDist{
+		for dist_met == "false" {
+			if ev.Act == Ignore {
 				dist_met = "true"
-			} else {
-				if ev.StimType == "Cont" {
-					//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-					ev.Stim = rand.Float64()*float64(360) //ring 	
-				}
-				if ev.StimType == "Fixed" {
-					ev.Stim = float64(rand.Intn(ev.NStim))
-
-				}
-			
 			}
-		}
-
-
-		if ev.Act == Store2 && ev.Maint1 >=0 { //if current trial is store2 and there is something already for stimulus 1
-			if math.Abs(ev.Maint1 - ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1 - ev.Stim) > ev.MinDist{
+			if ev.Act == Recall1 {
 				dist_met = "true"
-			} else {
-				if ev.StimType == "Cont" {
-					//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-					ev.Stim = rand.Float64()*float64(360) //ring 	
-				}
-				if ev.StimType == "Fixed" {
-					ev.Stim = float64(rand.Intn(ev.NStim))
-
-				}
-			
 			}
-		}
-		if ev.Act == Store1 && ev.Maint2 <0 { //current trial is store1 and there is nothing in stimulus 2
-			dist_met = "true"
-		}
-	
-		if ev.Act == Store2 && ev.Maint1 <0 { //current trial is store2 and there is nothing in stimulus 1
-			dist_met = "true"
-		}
+			if ev.Act == Recall2 {
+				dist_met = "true"
+			}
+			if ev.Act == Store1 && ev.Maint2 >= 0 { //if current trial is store1 and there is something already for stimulus 2
 
+				if math.Abs(ev.Maint2-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2-ev.Stim) > ev.MinDist {
+					dist_met = "true"
+				} else {
+					if ev.StimType == "Cont" {
+						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+						ev.Stim = rand.Float64() * float64(360) //ring
+					}
+					if ev.StimType == "Fixed" {
+						ev.Stim = float64(rand.Intn(ev.NStim))
 
+					}
 
+				}
+			}
+
+			if ev.Act == Store2 && ev.Maint1 >= 0 { //if current trial is store2 and there is something already for stimulus 1
+				if math.Abs(ev.Maint1-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1-ev.Stim) > ev.MinDist {
+					dist_met = "true"
+				} else {
+					if ev.StimType == "Cont" {
+						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+						ev.Stim = rand.Float64() * float64(360) //ring
+					}
+					if ev.StimType == "Fixed" {
+						ev.Stim = float64(rand.Intn(ev.NStim))
+
+					}
+
+				}
+			}
+			if ev.Act == Store1 && ev.Maint2 < 0 { //current trial is store1 and there is nothing in stimulus 2
+				dist_met = "true"
+			}
+
+			if ev.Act == Store2 && ev.Maint1 < 0 { //current trial is store2 and there is nothing in stimulus 1
+				dist_met = "true"
+			}
+
+		}
 
 	}
-	
-
 
 	switch ev.Act {
 	case Store1:

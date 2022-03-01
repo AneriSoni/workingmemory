@@ -442,7 +442,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
 	ss.TrainEnv.StimType = "Cont" //continuous (0-3) vs. fixed stimulus (0,1,2,3)
 	ss.TrainEnv.StimDist = "false"
-	ss.TrainEnv.MaxDist = 180
+	ss.TrainEnv.MaxDist = 45
 	ss.TrainEnv.MinDist = 0
 
 	ss.TestEnv.Nm = "TestEnv"
@@ -455,7 +455,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Trial.Max = 700      // good amount for testing
 	ss.TestEnv.StimType = "Cont"
 	ss.TestEnv.StimDist = "false"
-	ss.TestEnv.MaxDist = 180
+	ss.TestEnv.MaxDist = 45
 	ss.TestEnv.MinDist = 0
 
 	ss.TrainEnv.Init(0)
