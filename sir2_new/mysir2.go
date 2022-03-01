@@ -434,7 +434,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no" 
 
 	ss.LayerSize = 20
-	ss.Stripes = 2
+	ss.Stripes = 3
 	
 }
 
@@ -484,6 +484,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	fmin2.Scale.Set(1, 1)
 	fmin2.Wrap = true
 
+
+
 	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcOutD, rp, full, emer.Forward, &rl.RWPrjn{})
@@ -493,6 +495,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj = net.ConnectLayersPrjn(ctrl, mtxNoGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
 	pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward)
+
 	pj.SetClass("PFCFixed")
 
 	net.ConnectLayers(inp, hid, full, emer.Forward)
