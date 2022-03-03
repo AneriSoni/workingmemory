@@ -1784,7 +1784,7 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
-	flag.BoolVar(&saveEpcLog, "epclog", false, "if true, save train epoch log to file")
+	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", false, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
 	flag.StringVar(&ss.Lesion, "Lesion", "None", "lesion type")
@@ -1804,33 +1804,6 @@ func (ss *Sim) CmdArgs() {
 		fmt.Printf("Using ParamSet: %s\n", ss.ParamSet)
 	}
 
-	if saveEpcLog {
-		var err error
-		fnm := ss.LogFileName("epc")
-		ss.TrnEpcFile, err = os.Create(fnm)
-		if err != nil {
-			log.Println(err)
-			ss.TrnEpcFile = nil
-		} else {
-			fmt.Printf("Saving epoch log to: %s\n", fnm)
-			defer ss.TrnEpcFile.Close()
-		}
-	}
-	if saveRunLog {
-		var err error
-		fnm := ss.LogFileName("run")
-		ss.RunFile, err = os.Create(fnm)
-		if err != nil {
-			log.Println(err)
-			ss.RunFile = nil
-		} else {
-			fmt.Printf("Saving run log to: %s\n", fnm)
-			defer ss.RunFile.Close()
-		}
-	}
-	if ss.SaveWts {
-		fmt.Printf("Saving final weights per run\n")
-	}
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
 
 	models := make([]int, ss.NumModels)
@@ -1896,5 +1869,32 @@ func (ss *Sim) CmdArgs() {
 	//		ss.RunTestAll()
 	//
 	//	}
-
+	if saveEpcLog {
+		var err error
+		//fnm := ss.LogFileName("epc")
+		fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		ss.TrnEpcFile, err = os.Create(fnm)
+		if err != nil {
+			log.Println(err)
+			ss.TrnEpcFile = nil
+		} else {
+			fmt.Printf("Saving epoch log to: %s\n", fnm)
+			defer ss.TrnEpcFile.Close()
+		}
+	}
+	if saveRunLog {
+		var err error
+		fnm := ss.LogFileName("run")
+		ss.RunFile, err = os.Create(fnm)
+		if err != nil {
+			log.Println(err)
+			ss.RunFile = nil
+		} else {
+			fmt.Printf("Saving run log to: %s\n", fnm)
+			defer ss.RunFile.Close()
+		}
+	}
+	if ss.SaveWts {
+		fmt.Printf("Saving final weights per run\n")
+	}
 }

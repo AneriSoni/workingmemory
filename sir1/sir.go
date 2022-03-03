@@ -30,17 +30,18 @@ import (
 	"github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/etable/simat"
 	"github.com/emer/etable/split"
+
 	//"github.com/emer/leabra/deep"
-	"github.com/emer/leabra/rl" //not a module before, but trying to replace the pbwm with rl
+	"github.com/emer/emergent/popcode"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/pbwm"
+	"github.com/emer/leabra/rl" //not a module before, but trying to replace the pbwm with rl
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"
-	"github.com/emer/emergent/popcode"
 )
 
 func main() {
@@ -139,7 +140,7 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
 				}},
-			//{Sel: ".PFCRand", Desc: "Input -> PFC", //not in new 
+			//{Sel: ".PFCRand", Desc: "Input -> PFC", //not in new
 			//	Params: params.Params{
 			//		"Prjn.Learn.Learn": "false",
 			//		"Prjn.WtInit.Mean": "0.8",
@@ -148,8 +149,8 @@ var ParamSets = params.Sets{
 			//	}},
 			{Sel: ".MatrixPrjn", Desc: "Matrix learning",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.04",
-					"Prjn.WtInit.Var":  "0.1",
+					"Prjn.Learn.Lrate":         "0.04",
+					"Prjn.WtInit.Var":          "0.1",
 					"Prjn.Trace.GateNoGoPosLR": "1",    // 0.1 default//new
 					"Prjn.Trace.NotGatedLR":    "0.7",  // 0.7 default//new
 					"Prjn.Trace.Decay":         "1.0",  // 1.0 default//new
@@ -169,16 +170,16 @@ var ParamSets = params.Sets{
 					//"Layer.Inhib.ActAvg.Init":  "0.05",//old
 					//"Layer.Inhib.ActAvg.Fixed": "true",//old
 
-					"Layer.Act.XX1.Gain":       "100",//new
-					"Layer.Inhib.Layer.Gi":     "2.2", // 2.2 > 1.8 > 2.4//new
-					"Layer.Inhib.Layer.FB":     "1",   // 1 > .5//new
-					"Layer.Inhib.Pool.On":      "true",//new
-					"Layer.Inhib.Pool.Gi":      "2.1", // def 1.9//new
-					"Layer.Inhib.Pool.FB":      "0",//new
-					"Layer.Inhib.Self.On":      "true",//new
-					"Layer.Inhib.Self.Gi":      "0.4", // def 0.3//new
-					"Layer.Inhib.ActAvg.Init":  "0.05",//new
-					"Layer.Inhib.ActAvg.Fixed": "true",//new
+					"Layer.Act.XX1.Gain":       "100",  //new
+					"Layer.Inhib.Layer.Gi":     "2.2",  // 2.2 > 1.8 > 2.4//new
+					"Layer.Inhib.Layer.FB":     "1",    // 1 > .5//new
+					"Layer.Inhib.Pool.On":      "true", //new
+					"Layer.Inhib.Pool.Gi":      "2.1",  // def 1.9//new
+					"Layer.Inhib.Pool.FB":      "0",    //new
+					"Layer.Inhib.Self.On":      "true", //new
+					"Layer.Inhib.Self.Gi":      "0.4",  // def 0.3//new
+					"Layer.Inhib.ActAvg.Init":  "0.05", //new
+					"Layer.Inhib.ActAvg.Fixed": "true", //new
 				}},
 			{Sel: "#GPiThal", Desc: "defaults also set automatically by layer but included here just to be sure",
 				Params: params.Params{
@@ -287,21 +288,21 @@ type Sim struct {
 	TrainUpdt   leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
 	TestUpdt    leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
 	TstRecLays  []string          `desc:"names of layers to record activations etc of during testing"`
-	
-	InOneTsr    *etensor.Float32  `view:"-" desc:"for holding layer values"`
-	InTwoTsr    *etensor.Float32  `view:"-" desc:"for holding layer values"`
 
-	TmpVals      []float32         `view:"-" desc:"for holding decoded layer values"`
-	TmpVals2     []float32        `view:"-" desc:"for holding decoded layer values"`
-	TmpVals3     []float32         `view:"-" desc:"for holding decoded layer values"`
-	TmpValsInp   []float32        `view:"-" desc:"for holding decoded layer values"`  
-	TmpValsPFC    []float32        `view:"-" desc:"for holding decoded layer values"`
+	InOneTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
+	InTwoTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
 
-	pop_min     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`  
-	pop_max     float32           `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
-	pop_sigma   float64           `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range"`
+	TmpVals    []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpVals2   []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpVals3   []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsInp []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsPFC []float32 `view:"-" desc:"for holding decoded layer values"`
 
-	RewThreshold float64          `desc: "threshold for reward function"`
+	pop_min   float32 `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
+	pop_max   float32 `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
+	pop_sigma float64 `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range"`
+
+	RewThreshold float64 `desc: "threshold for reward function"`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -322,15 +323,14 @@ type Sim struct {
 	FirstZero     int     `inactive:"+" desc:"epoch at when SSE first went to zero"`
 	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero SSE"`
 
-	Lesion        string    `inactive:"+" desc:"what type of lesion: ex) PFC, Hidden, None, PFCHidden"`
-	LesionProp    float64   `inactive:"+" desc:"proportion of test trials to have a lesion"`
-	LesionApplied string      `inactive:"+" desc:"if lesion is actually applied"`
-	Folder	      string     `inactive:"+" desc:"folder for saving"`
-	LayerSize     int	`inactive:"+" desc:"layer size"`    
-	Stripes       int        `inactive:"+" desc:"number of pfc stripes"`   
-	Experiment    string     `inactive:"+" desc:"type of experiment to run"`  
-	NumModels     int        `inactive:"+" desc:"number of models to run"`  
-
+	Lesion        string  `inactive:"+" desc:"what type of lesion: ex) PFC, Hidden, None, PFCHidden"`
+	LesionProp    float64 `inactive:"+" desc:"proportion of test trials to have a lesion"`
+	LesionApplied string  `inactive:"+" desc:"if lesion is actually applied"`
+	Folder        string  `inactive:"+" desc:"folder for saving"`
+	LayerSize     int     `inactive:"+" desc:"layer size"`
+	Stripes       int     `inactive:"+" desc:"number of pfc stripes"`
+	Experiment    string  `inactive:"+" desc:"type of experiment to run"`
+	NumModels     int     `inactive:"+" desc:"number of models to run"`
 
 	// internal state - view:"-"
 	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -409,10 +409,10 @@ func (ss *Sim) Config() {
 
 func (ss *Sim) ConfigInputTsrs() {
 	if ss.InOneTsr == nil {
-		ss.InOneTsr = etensor.NewFloat32([]int{1,ss.LayerSize},nil,nil)
+		ss.InOneTsr = etensor.NewFloat32([]int{1, ss.LayerSize}, nil, nil)
 	}
 	if ss.InTwoTsr == nil {
-		ss.InTwoTsr = etensor.NewFloat32([]int{1,ss.LayerSize},nil,nil)
+		ss.InTwoTsr = etensor.NewFloat32([]int{1, ss.LayerSize}, nil, nil)
 	}
 }
 func (ss *Sim) ConfigEnv() {
@@ -444,16 +444,16 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.NoRewVal = 0
 	ss.TestEnv.Validate()
 	ss.TestEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
-	ss.TestEnv.Trial.Max = 700     // good amount for testing
+	ss.TestEnv.Trial.Max = 700      // good amount for testing
 	ss.TestEnv.StimType = "Cont"
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
 
-	ss.pop_min = 0 //ring
-	ss.pop_max = 360 //ring
-	ss.pop_sigma = 0.15 //ring 
-	
+	ss.pop_min = 0      //ring
+	ss.pop_max = 360    //ring
+	ss.pop_sigma = 0.15 //ring
+
 	//ss.pop_min = -0.01 //no ring
 	//ss.pop_max = 3.01 //no ring
 	//ss.pop_sigma = 0.25 //no ring
@@ -462,8 +462,8 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.Lesion = "None"
 	ss.LesionProp = 0
-	ss.LesionApplied = "no" 
-	
+	ss.LesionApplied = "no"
+
 	ss.LayerSize = 20
 	ss.Stripes = 2
 }
@@ -473,13 +473,13 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	//rew, rp, da := net.AddRWLayers("", relpos.Behind, 2) //old
 	//snc := da.(*pbwm.RWDaLayer) //old
 	rew, rp, da := rl.AddRWLayers(&net.Network, "", relpos.Behind, 2) //new
-	snc := da.(*rl.RWDaLayer) //new
+	snc := da.(*rl.RWDaLayer)                                         //new
 	snc.SetName("SNc")
 
 	inp := net.AddLayer2D("Input", 1, ss.LayerSize, emer.Input)
 	ctrl := net.AddLayer2D("CtrlInput", 1, 3, emer.Input)
 	out := net.AddLayer2D("Output", 1, ss.LayerSize, emer.Target)
-	hid := net.AddLayer2D("Hidden", ss.LayerSize,ss.LayerSize, emer.Hidden)
+	hid := net.AddLayer2D("Hidden", ss.LayerSize, ss.LayerSize, emer.Hidden)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	ctrl.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", XAlign: relpos.Left, Space: 2})
@@ -487,17 +487,16 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
 	//mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 2, 2, 2, 1, 3, 1, 10)
-	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("",ss.Stripes, 1, 1, 1, 3, 1, ss.LayerSize)	
-	
+	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", ss.Stripes, 1, 1, 1, 3, 1, ss.LayerSize)
+
 	_ = gpe
 	_ = gpi
 	_ = pfcMnt
 	_ = pfcMntD
 	_ = pfcOut
 
-	cin := cini.(*pbwm.CINLayer) //new
+	cin := cini.(*pbwm.CINLayer)           //new
 	cin.RewLays.Add(rew.Name(), rp.Name()) //new
-
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Rew", YAlign: relpos.Front, Space: 14})
 
@@ -517,8 +516,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	//net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &pbwm.RWPrjn{})
 	//net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &pbwm.RWPrjn{})
 
-
-	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{}) //new
+	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{})    //new
 	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{}) //new
 	net.ConnectLayersPrjn(pfcOutD, rp, full, emer.Forward, &rl.RWPrjn{}) //new
 
@@ -673,15 +671,13 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	//pc.Defaults() //no ring
 	//pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma) //no ring
 
-	pc := popcode.Ring{} //ring
-	pc.Defaults() //ring 
-	pc.Min = ss.pop_min //ring
-	pc.Max = ss.pop_max //ring
+	pc := popcode.Ring{}             //ring
+	pc.Defaults()                    //ring
+	pc.Min = ss.pop_min              //ring
+	pc.Max = ss.pop_max              //ring
 	pc.Sigma = float32(ss.pop_sigma) //ring
-	
 
-
-	lays := []string{"Input", "CtrlInput","Output"}
+	lays := []string{"Input", "CtrlInput", "Output"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra() //new
 		//ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep() //old
@@ -689,12 +685,12 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		if pats == nil {
 			continue
 		}
-		
+
 		if lnm == "Input" {
 			v := float32(pats.FloatVal1D(0))
 			if v != -999 {
 				//pc.Encode(&ss.InOneTsr.Values,v,10) //no ring
-				pc.Encode(&ss.InOneTsr.Values,v,ss.LayerSize) //ring 
+				pc.Encode(&ss.InOneTsr.Values, v, ss.LayerSize) //ring
 				ly.ApplyExt(ss.InOneTsr)
 			}
 			//fmt.Printf("pats is %v",pats)
@@ -707,34 +703,32 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		if lnm == "Output" {
 			v := float32(pats.FloatVal1D(0))
 			//pc.Encode(&ss.InTwoTsr.Values,v,10)//no ring
-			pc.Encode(&ss.InTwoTsr.Values,v,ss.LayerSize) //ring
-			ly.ApplyExt(ss.InTwoTsr) 
-	
+			pc.Encode(&ss.InTwoTsr.Values, v, ss.LayerSize) //ring
+			ly.ApplyExt(ss.InTwoTsr)
+
 		}
 
-
 		//if lnm == "Input" {
-		//	ly = ss.Net.LayerByName("CtrlInput").(deep.DeepLayer).AsDeep()	
+		//	ly = ss.Net.LayerByName("CtrlInput").(deep.DeepLayer).AsDeep()
 		//	ly.ApplyExt(pats)
 		//}
 	}
 }
 func sumarray(array []float32) float32 {
 	resultsum := float32(0)
-	for _,v := range array {
-		resultsum+=float32(math.Abs(float64(v)))
+	for _, v := range array {
+		resultsum += float32(math.Abs(float64(v)))
 	}
 
 	return resultsum
 }
 func diff(a, b []float32) []float32 {
 	result := []float32{}
-	for x,_ := range b {
-		result = append(result,a[x]-b[x])
+	for x, _ := range b {
+		result = append(result, a[x]-b[x])
 	}
 	return result
 }
-
 
 // ApplyReward computes reward based on network output and applies it -- call
 // at start of 3rd quarter (plus phase)
@@ -750,37 +744,35 @@ func (ss *Sim) ApplyReward(train bool) {
 	}
 
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
-	
 
 	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
 	//pc.Defaults() //no ring
 	//pc.SetRange(ss.pop_min,ss.pop_max,ss.pop_sigma) //does not say to add these two - lets see if it works //no ring
 
-	pc := popcode.Ring{} //ring
-	pc.Defaults() //ring 
-	pc.Min = ss.pop_min //ring
-	pc.Max = ss.pop_max //ring
+	pc := popcode.Ring{}             //ring
+	pc.Defaults()                    //ring
+	pc.Min = ss.pop_min              //ring
+	pc.Max = ss.pop_max              //ring
 	pc.Sigma = float32(ss.pop_sigma) //ring
 
-	out.UnitVals(&ss.TmpVals,"ActM") //writes ActM value from the layer
-	
+	out.UnitVals(&ss.TmpVals, "ActM") //writes ActM value from the layer
+
 	//needed for the older reward version (based on decoded output)
 	//outdecode := pc.Decode(ss.TmpVals) //this decodes the slide into a single float32
-	//var outdecodei int = int(math.Round(float64(outdecode))) 
-	
+	//var outdecodei int = int(math.Round(float64(outdecode)))
+
 	//sir original work (discrete inputs)
 	//out := ss.Net.LayerByName("Output").(deep.DeepLayer).AsDeep()
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
 	//mxi := out.Pools[0].ActM.MaxIdx
 
 	//TARGET
-	out.UnitVals(&ss.TmpVals2,"Targ") //writes Targ value from the layer
+	out.UnitVals(&ss.TmpVals2, "Targ") //writes Targ value from the layer
 	//outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	//fmt.Printf("Targ: %v",outdecode2)
-	
-	
+
 	//en.SetReward(outdecodei) //old reward rule (based on decoded value)
-	en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2,ss.TmpVals))),ss.RewThreshold) //based on difference + threshold (in sir_env)
+	en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference + threshold (in sir_env)
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(leabra.LeabraLayer).AsLeabra() //new
 	//ly := ss.Net.LayerByName("Rew").(deep.DeepLayer).AsDeep() //old
@@ -973,7 +965,6 @@ func (ss *Sim) UnLesionNet(net *pbwm.Network) {
 	net.InitActs()
 }
 
-
 // TestTrial runs one trial of testing -- always sequentially presented inputs
 func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.TestEnv.Step()
@@ -982,7 +973,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 		comp := rand.Float64()
 		if comp < ss.LesionProp {
 			ss.LesionApplied = "yes"
-	
+
 			if ss.Lesion == "PFC" {
 				ss.Net.LayerByName("PFCoutD").SetOff(true)
 			}
@@ -994,8 +985,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 				ss.Net.LayerByName("Hidden").SetOff(true)
 			}
 		}
-	
-	
+
 	}
 
 	// Query counters FIRST
@@ -1013,7 +1003,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.AlphaCyc(false)   // !train
 	ss.TrialStats(false) // !accumulate
 	ss.LogTstTrl(ss.TstTrlLog)
-	if ss.LesionApplied == "yes"{
+	if ss.LesionApplied == "yes" {
 		ss.UnLesionNet(ss.Net)
 		ss.LesionApplied = "no"
 	}
@@ -1038,9 +1028,9 @@ func (ss *Sim) RunTestAll() {
 
 	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir1/results/"+ss.RunName()+".csv"
 
-	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir1/results/"+ss.Folder+ss.RunName()+".csv"
-	
-ss.TstTrlFile, err = os.Create(fnm)
+	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir1/results/" + ss.Folder + ss.RunName() + ".csv"
+
+	ss.TstTrlFile, err = os.Create(fnm)
 	ss.StopNow = false
 	ss.TestAll()
 	ss.Stopped()
@@ -1117,7 +1107,6 @@ func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 	// sheets for them, e.g., "TrainEnv", "TrainEnv" etc
 	return err
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Logging
@@ -1277,17 +1266,15 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	epc := ss.TestEnv.Epoch.Prv // this is triggered by increment so use previous value
 
-	
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	inp := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
 	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 
-	pc := popcode.Ring{} //ring
-	pc.Defaults() //ring 
-	pc.Min = ss.pop_min //ring
-	pc.Max = ss.pop_max //ring
+	pc := popcode.Ring{}             //ring
+	pc.Defaults()                    //ring
+	pc.Min = ss.pop_min              //ring
+	pc.Max = ss.pop_max              //ring
 	pc.Sigma = float32(ss.pop_sigma) //ring
-
 
 	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
 	//pc.Defaults() //no ring
@@ -1319,11 +1306,11 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		ly.UnitValsTensor(tsr, "ActM")
 		dt.SetCellTensor(lnm, row, tsr)
 	}
-	out.UnitVals(&ss.TmpVals,"ActM")
+	out.UnitVals(&ss.TmpVals, "ActM")
 	outdecode := pc.Decode(ss.TmpVals)
 	dt.SetCellFloat("OutDecode", row, float64(outdecode))
 
-	out.UnitVals(&ss.TmpVals2,"Targ") //writes Targ value from the layer
+	out.UnitVals(&ss.TmpVals2, "Targ")   //writes Targ value from the layer
 	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	dt.SetCellFloat("OutTarget", row, float64(outdecode2))
 
@@ -1332,16 +1319,15 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("InDecode", row, float64(indecode))
 
 	pfc.UnitVals(&ss.TmpValsPFC, "Act")
-	for stripe := 0; stripe< ss.Stripes; stripe++ {
-		pfcdecode := pc.Decode(ss.TmpValsPFC[stripe*ss.LayerSize:(stripe+1)*ss.LayerSize])
-		stnm := "stripe"+string(stripe)
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		pfcdecode := pc.Decode(ss.TmpValsPFC[stripe*ss.LayerSize : (stripe+1)*ss.LayerSize])
+		stnm := "stripe" + string(stripe)
 		dt.SetCellFloat(stnm, row, float64(pfcdecode))
 	}
 
-
 	dt.SetCellString("Lesion", row, ss.Lesion)
-	dt.SetCellFloat("LesionProp",row,ss.LesionProp)
-	dt.SetCellString("LesionApplied",row,ss.LesionApplied)
+	dt.SetCellFloat("LesionProp", row, ss.LesionProp)
+	dt.SetCellString("LesionApplied", row, ss.LesionApplied)
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
@@ -1352,7 +1338,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		}
 		dt.WriteCSVRow(ss.TstTrlFile, row, etable.Tab)
 	}
-	
+
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
@@ -1381,19 +1367,19 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm, etensor.FLOAT64, ly.Shp.Shp, nil})
 	}
 
-	for stripe := 0; stripe< ss.Stripes; stripe++ {
-		stnm := "stripe"+string(stripe)
-		sch = append(sch,etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		stnm := "stripe" + string(stripe)
+		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
 	}
 	sch = append(sch, etable.Schema{
 
-	{"OutDecode", etensor.FLOAT64, nil, nil}, //adds outdecode value to table
-	{"OutTarget", etensor.FLOAT64, nil, nil}, //adds target value to table
-	{"InDecode", etensor.FLOAT64, nil, nil}, //adds input value to table
-	{"Lesion", etensor.STRING,nil, nil},//adds lesion type
-	{"LesionProp", etensor.FLOAT64, nil, nil}, //adds prop of trials with lesion
-	{"LesionApplied", etensor.STRING, nil, nil}, //add if lesion was actually applied in that test trial
-}...)
+		{"OutDecode", etensor.FLOAT64, nil, nil},    //adds outdecode value to table
+		{"OutTarget", etensor.FLOAT64, nil, nil},    //adds target value to table
+		{"InDecode", etensor.FLOAT64, nil, nil},     //adds input value to table
+		{"Lesion", etensor.STRING, nil, nil},        //adds lesion type
+		{"LesionProp", etensor.FLOAT64, nil, nil},   //adds prop of trials with lesion
+		{"LesionApplied", etensor.STRING, nil, nil}, //add if lesion was actually applied in that test trial
+	}...)
 	dt.SetFromSchema(sch, nt)
 }
 
@@ -1826,9 +1812,9 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
-	flag.StringVar(&ss.Lesion, "Lesion","None", "lesion type")
-	flag.Float64Var(&ss.LesionProp, "LesionProp",0,"proportion of test trials with lesion")
-	flag.Float64Var(&ss.pop_sigma, "pop_sigma",0.15,"sigma for pop coding")
+	flag.StringVar(&ss.Lesion, "Lesion", "None", "lesion type")
+	flag.Float64Var(&ss.LesionProp, "LesionProp", 0, "proportion of test trials with lesion")
+	flag.Float64Var(&ss.pop_sigma, "pop_sigma", 0.15, "sigma for pop coding")
 	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 5.5, "threshold for rew in sir2_env")
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
 	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
@@ -1843,9 +1829,63 @@ func (ss *Sim) CmdArgs() {
 		fmt.Printf("Using ParamSet: %s\n", ss.ParamSet)
 	}
 
+	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
+	//ss.Train()
+	models := make([]int, ss.NumModels)
+	for i := 0; i < ss.NumModels; i++ {
+		models[i] = i
+	}
+	//fmt.Printf("%v", models)
+
+	if ss.Experiment == "Lesion" {
+
+		//Lesion experiments
+		props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1} //proportion of lesions
+		for _, w := range props {
+			ss.LesionProp = w
+			fmt.Printf("LesionProps is %v", w)
+
+			for _, v := range models {
+				ss.Tag = "model" + strconv.Itoa(v) + "_Lesion" + ss.Lesion + "_LesionProp" + strconv.FormatFloat(ss.LesionProp, 'G', -1, 64)
+				fmt.Printf(ss.Tag)
+				ss.TrainRun()
+				ss.RunTestAll()
+			}
+		}
+
+	} else if ss.Experiment == "RewThres" {
+
+		RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
+
+		for _, w := range RewThresholds {
+
+			ss.RewThreshold = w
+			fmt.Printf("reward threshold is %v", w)
+			for _, v := range models {
+
+				ss.Tag = "model" + strconv.Itoa(v) + "_Threhsold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_sigma" + strconv.FormatFloat(float64(ss.pop_sigma), 'G', -1, 32)
+				fmt.Printf(ss.Tag)
+
+				ss.TrainRun()
+				ss.RunTestAll()
+
+			}
+		}
+	} else {
+
+		for _, v := range models {
+			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+			ss.Tag = "model" + strconv.Itoa(v) + "_Stripes" + strconv.FormatFloat(float64(ss.Stripes), 'G', -1, 64)
+			//ss.Tag = "model"+strconv.Itoa(v)
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+			ss.RunTestAll()
+		}
+	}
 	if saveEpcLog {
 		var err error
-		fnm := ss.LogFileName("epc")
+		//fnm := ss.LogFileName("epc")
+		fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir1/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 		ss.TrnEpcFile, err = os.Create(fnm)
 		if err != nil {
 			log.Println(err)
@@ -1869,61 +1909,5 @@ func (ss *Sim) CmdArgs() {
 	}
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
-	}
-	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
-	//ss.Train()
-	models := make([]int, ss.NumModels)
-	for i:= 0; i < ss.NumModels; i++ {
-	    models[i] = i
-	}
-	//fmt.Printf("%v", models)
-
-
-	if ss.Experiment == "Lesion" {
-
-	//Lesion experiments 
-	props := []float64{0, 0.2, 0.4, 0.6, 0.8, 1} //proportion of lesions
-	for _,w := range props {
-		ss.LesionProp = w
-		fmt.Printf("LesionProps is %v",w)
-
-		for _,v := range models {
-			ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			fmt.Printf(ss.Tag)
-			ss.TrainRun()
-			ss.RunTestAll()
-		}
-	}
-
-
-	} else if ss.Experiment == "RewThres"{
-
-
-	RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
-	
-	for _,w := range RewThresholds {
-		
-		ss.RewThreshold = w
-		fmt.Printf("reward threshold is %v",w)
-		for _,v := range models {
-	
-			ss.Tag = "model"+strconv.Itoa(v)+"_Threhsold"+strconv.FormatFloat(ss.RewThreshold,'G',-1,64)+"_sigma"+strconv.FormatFloat(float64(ss.pop_sigma),'G',-1,32)
-			fmt.Printf(ss.Tag)
-	
-			ss.TrainRun()
-			ss.RunTestAll()
-
-			}
-	}
-	} else {
-
-	for _,v := range models {
-	//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-		ss.Tag = "model"+strconv.Itoa(v)+"_Stripes"+strconv.FormatFloat(float64(ss.Stripes),'G',-1,64)
-		//ss.Tag = "model"+strconv.Itoa(v)
-		fmt.Printf(ss.Tag)
-		ss.TrainRun()
-		ss.RunTestAll()
-	}
 	}
 }
