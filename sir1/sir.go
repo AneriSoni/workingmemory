@@ -910,6 +910,12 @@ func (ss *Sim) TrainEpoch() {
 
 // TrainRun runs training trials for remainder of run
 func (ss *Sim) TrainRun() {
+
+	var err error
+	//fnm := ss.LogFileName("epc")
+	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir1/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	ss.TrnEpcFile, err = os.Create(fnm)
+
 	ss.StopNow = false
 	curRun := ss.TrainEnv.Run.Cur
 	for {
@@ -919,6 +925,14 @@ func (ss *Sim) TrainRun() {
 		}
 	}
 	ss.Stopped()
+
+	if err != nil {
+		log.Println(err)
+		ss.TrnEpcFile = nil
+	} else {
+		//fmt.Printf("Saving epoch log to: %s\n", fnm)
+		defer ss.TrnEpcFile.Close()
+	}
 }
 
 // Train runs the full training from this point onward
@@ -1809,8 +1823,8 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
-	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
-	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
+	flag.BoolVar(&saveEpcLog, "epclog", false, "if true, save train epoch log to file")
+	flag.BoolVar(&saveRunLog, "runlog", false, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
 	flag.StringVar(&ss.Lesion, "Lesion", "None", "lesion type")
 	flag.Float64Var(&ss.LesionProp, "LesionProp", 0, "proportion of test trials with lesion")
