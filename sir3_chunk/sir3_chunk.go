@@ -937,6 +937,12 @@ func (ss *Sim) TrainEpoch() {
 
 // TrainRun runs training trials for remainder of run
 func (ss *Sim) TrainRun() {
+
+	var err error
+	//fnm := ss.LogFileName("epc")
+	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	ss.TrnEpcFile, err = os.Create(fnm)
+
 	ss.StopNow = false
 	curRun := ss.TrainEnv.Run.Cur
 	for {
@@ -946,6 +952,14 @@ func (ss *Sim) TrainRun() {
 		}
 	}
 	ss.Stopped()
+
+	if err != nil {
+		log.Println(err)
+		ss.TrnEpcFile = nil
+	} else {
+		//fmt.Printf("Saving epoch log to: %s\n", fnm)
+		defer ss.TrnEpcFile.Close()
+	}
 }
 
 // Train runs the full training from this point onward
