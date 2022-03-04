@@ -380,7 +380,7 @@ func (ss *Sim) ConfigInTsrs() { //need this to not have error nill pointer error
 
 func (ss *Sim) ConfigEnv() {
 	if ss.MaxRuns == 0 { // allow user override
-		ss.MaxRuns = 10
+		ss.MaxRuns = 100
 	}
 	if ss.MaxEpcs == 0 { // allow user override
 		ss.MaxEpcs = 500
@@ -853,7 +853,7 @@ func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
 	ss.TrlAbsDA = math.Abs(ss.TrlDA)
 	ss.TrlRewPred = float64(rp.Neurons[0].Act)
 	ss.TrlCosDiff = float64(out.CosDiff.Cos)
-	ss.TrlSSE, ss.TrlAvgSSE = out.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
+	ss.TrlSSE, ss.TrlAvgSSE = out.MSE(0.05) // 0.5 = per-unit tolerance -- right side of .5 //originally 0.5; new 0.05
 	if ss.TrlSSE > 0 {
 		ss.TrlErr = 1
 	} else {
@@ -1776,7 +1776,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
-	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do (note that MaxEpcs is in paramset)")
+	flag.IntVar(&ss.MaxRuns, "runs", 100, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", false, "if true, save train epoch log to file")
@@ -1845,10 +1845,10 @@ func (ss *Sim) CmdArgs() {
 
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			ss.Tag = "model" + strconv.Itoa(v) + "_Stripes" + strconv.FormatFloat(float64(ss.Stripes), 'G', -1, 64)
+			ss.Tag = "model_lowtol_" + strconv.Itoa(v) + "_Stripes" + strconv.FormatFloat(float64(ss.Stripes), 'G', -1, 64)
 			//	ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
-			fmt.Print("/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv")
+			//fmt.Print("/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv")
 			ss.TrainRun()
 			ss.RunTestAll()
 		}
