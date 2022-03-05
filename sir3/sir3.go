@@ -430,7 +430,7 @@ func (ss *Sim) ConfigEnv() {
 	//ss.pop_max = 3.8 //no ring
 	//ss.pop_sigma = 0.15 // need to optimize over this parameter //no ring
 
-	ss.RewThreshold = 5.5
+	ss.RewThreshold = 10 //chnging this here doesn't help, need to change in tag
 
 	ss.Lesion = "None"
 	ss.LesionProp = 0
@@ -1804,7 +1804,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Lesion, "Lesion", "None", "lesion type")
 	flag.Float64Var(&ss.LesionProp, "LesionProp", 0, "proportion of test trials with lesion")
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma", 0.15, "sigma for pop coding")
-	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 5.5, "threshold for rew in sir2_env")
+	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 10, "threshold for rew in sir2_env")
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
 	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
 	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
@@ -1863,7 +1863,7 @@ func (ss *Sim) CmdArgs() {
 
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			ss.Tag = "model_lowtol_" + strconv.Itoa(v) + "_Stripes" + strconv.FormatFloat(float64(ss.Stripes), 'G', -1, 64)
+			ss.Tag = "model" + strconv.Itoa(v) + "_Stripes" + strconv.FormatFloat(float64(ss.Stripes), 'G', -1, 64)
 			//ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
