@@ -1789,6 +1789,8 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
 	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
 	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
+	flag.StringVar(&ss.TrainEnv.StimDist, "TrainStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for train")
+	flag.StringVar(&ss.TestEnv.StimDist, "TestStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for test")
 	flag.Parse()
 	ss.Init()
 
@@ -1845,7 +1847,7 @@ func (ss *Sim) CmdArgs() {
 
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			ss.Tag = "model" + strconv.Itoa(v) + "_Stripes" + strconv.FormatFloat(float64(ss.Stripes), 'G', -1, 64)
+			ss.Tag = "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64)
 			//	ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
 			//fmt.Print("/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv")

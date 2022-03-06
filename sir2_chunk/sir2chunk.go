@@ -441,7 +441,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
 	ss.TrainEnv.StimType = "Cont" //continuous (0-3) vs. fixed stimulus (0,1,2,3)
-	ss.TrainEnv.StimDist = "false"
+	ss.TrainEnv.StimDist = "false" //will be defined in the tag
 	ss.TrainEnv.MaxDist = 45
 	ss.TrainEnv.MinDist = 0
 
@@ -454,7 +454,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TestEnv.Trial.Max = 700      // good amount for testing
 	ss.TestEnv.StimType = "Cont"
-	ss.TestEnv.StimDist = "false"
+	ss.TestEnv.StimDist = "false" //will be defined in the tag
 	ss.TestEnv.MaxDist = 45
 	ss.TestEnv.MinDist = 0
 
@@ -1885,6 +1885,8 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
 	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
 	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
+	flag.StringVar(&ss.TrainEnv.StimDist, "TrainStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for train")
+	flag.StringVar(&ss.TestEnv.StimDist, "TestStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for test")
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
@@ -1940,7 +1942,7 @@ func (ss *Sim) CmdArgs() {
 
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			ss.Tag = "hybridmodel" + strconv.Itoa(v) + "_Stripes" + strconv.FormatFloat(float64(ss.Stripes), 'G', -1, 64)
+			ss.Tag = "hybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64)
 			//ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
