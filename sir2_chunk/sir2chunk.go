@@ -299,7 +299,8 @@ type Sim struct {
 	pop_max   float32 `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
 	pop_sigma float64 `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range, float64 so can use tags, otherwise inside setrange, need to be float32 so will be changed before inputting there"`
 
-	RewThreshold float64 `desc: "threshold for reward function"`
+	RewThreshold   float64 `desc: "threshold for reward function"`
+	RewardFunction string  `desc: "reward function, if decoded - use decoded value, otherwise use the unit activations function "`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -440,7 +441,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
-	ss.TrainEnv.StimType = "Cont" //continuous (0-3) vs. fixed stimulus (0,1,2,3)
+	ss.TrainEnv.StimType = "Cont"  //continuous (0-3) vs. fixed stimulus (0,1,2,3)
 	ss.TrainEnv.StimDist = "false" //will be defined in the tag
 	ss.TrainEnv.MaxDist = 45
 	ss.TrainEnv.MinDist = 0
@@ -469,7 +470,8 @@ func (ss *Sim) ConfigEnv() {
 	//ss.pop_max = 3.8 //no ring
 	//ss.pop_sigma = 0.15 // need to optimize over this parameter //no ring
 
-	ss.RewThreshold = 10
+	ss.RewThreshold = 5.5
+	ss.RewardFunction = "unitdifference"
 
 	ss.Lesion = "None"
 	ss.LesionProp = 0
@@ -809,14 +811,22 @@ func (ss *Sim) ApplyReward(train bool) {
 
 	//Actual Value
 	out.UnitVals(&ss.TmpVals, "ActM") //writes ActM value from the layer
+	outdecode := pc.Decode(ss.TmpVals)
+
 	//TARGET
-	out.UnitVals(&ss.TmpVals2, "Targ") //writes Targ value from the layer
+	out.UnitVals(&ss.TmpVals2, "Targ")   //writes Targ value from the layer
+	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
 	//en.SetReward(mxi)
 
-	en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference + threshold (in sir_env)
+	if ss.RewardFunction == "decoded" {
+		en.SetRewardThres(math.Abs(float64(outdecode-outdecode2)), ss.RewThreshold) //comparing the decoded values.
 
+	} else if ss.RewardFunction == "unitdifference" {
+		en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference in unit activation + threshold (in sir_env) //
+
+	}
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(leabra.LeabraLayer).AsLeabra()
 	ly.ApplyExt1DTsr(pats)
@@ -1881,7 +1891,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Lesion, "Lesion", "None", "lesion type")
 	flag.Float64Var(&ss.LesionProp, "LesionProp", 0, "proportion of test trials with lesion")
 	flag.Float64Var(&ss.pop_sigma, "pop_sigma", 0.15, "sigma for pop coding")
-	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 10, "threshold for rew in sir2_env")
+	flag.Float64Var(&ss.RewThreshold, "RewThreshold", 5.5, "threshold for rew in sir2_env")
 	flag.StringVar(&ss.Folder, "folder", "", "folder for saving results")
 	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
 	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
