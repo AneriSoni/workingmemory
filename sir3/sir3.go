@@ -853,7 +853,7 @@ func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
 	ss.TrlAbsDA = math.Abs(ss.TrlDA)
 	ss.TrlRewPred = float64(rp.Neurons[0].Act)
 	ss.TrlCosDiff = float64(out.CosDiff.Cos)
-	ss.TrlSSE, ss.TrlAvgSSE = out.MSE(0.05) // 0.5 = per-unit tolerance -- right side of .5//originally 0.5; new 0.05
+	ss.TrlSSE, ss.TrlAvgSSE = out.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5//originally 0.5; new 0.05
 	if ss.TrlSSE > 0 {
 		ss.TrlErr = 1
 	} else {
