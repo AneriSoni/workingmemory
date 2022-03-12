@@ -796,8 +796,10 @@ func (ss *Sim) ApplyReward(train bool) {
 
 	//Actual Value
 	out.UnitVals(&ss.TmpVals, "ActM") //writes ActM value from the layer
+	outdecode := pc.Decode(ss.TmpVals)
 	//TARGET
-	out.UnitVals(&ss.TmpVals2, "Targ") //writes Targ value from the layer
+	out.UnitVals(&ss.TmpVals2, "Targ")   //writes Targ value from the layer
+	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
 	//en.SetReward(mxi)
