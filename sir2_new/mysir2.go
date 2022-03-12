@@ -250,14 +250,18 @@ type Sim struct {
 	InOneTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
 	InTwoTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
 
-	TmpVals  []float32 `view:"-" desc:"for holding decoded layer values"`
-	TmpVals2 []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpVals    []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpVals2   []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsInp []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsCh  []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsPFC []float32 `view:"-" desc:"for holding decoded layer values"`
 
 	pop_min   float32 `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
 	pop_max   float32 `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
 	pop_sigma float64 `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range, float64 so can use tags, otherwise inside setrange, need to be float32 so will be changed before inputting there"`
 
-	RewThreshold float64 `desc: "threshold for reward function"`
+	RewThreshold   float64 `desc: "threshold for reward function"`
+	RewardFunction string  `desc: "reward function, if decoded - use decoded value, otherwise use the unit activations function "`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -286,6 +290,11 @@ type Sim struct {
 	Stripes       int     `inactive:"+" desc:"number of pfc stripes"`
 	Experiment    string  `inactive:"+" desc:"type of experiment to run"`
 	NumModels     int     `inactive:"+" desc:"number of models to run"`
+	RunLocation   string  `inactive:"+" desc:"location run, determines file save location"`
+
+	TrlDecodedDiff    float64 `inactive:"+" desc:"current trial's error based on the difference between decoded targ and decoded actm"`
+	SumTrlDecodedDiff float64 `inactive:"+" desc:"sum over the trial's error"`
+	EpcDecodedDiff    float64 `inactive:"+" desc:"current epoch average difference (average across all the trials)"`
 
 	// internal state - view:"-"
 	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -427,7 +436,8 @@ func (ss *Sim) ConfigEnv() {
 	//ss.pop_max = 3.8 //no ring
 	//ss.pop_sigma = 0.15 // need to optimize over this parameter //no ring
 
-	ss.RewThreshold = 10 //changing this wont work - need to change in the buttom - tag
+	ss.RewThreshold = 5.5 //changing this wont work - need to change in the buttom - tag
+	ss.RewardFunction = "unitdifference"
 
 	ss.Lesion = "None"
 	ss.LesionProp = 0
@@ -742,14 +752,22 @@ func (ss *Sim) ApplyReward(train bool) {
 
 	//Actual Value
 	out.UnitVals(&ss.TmpVals, "ActM") //writes ActM value from the layer
+	outdecode := pc.Decode(ss.TmpVals)
+
 	//TARGET
-	out.UnitVals(&ss.TmpVals2, "Targ") //writes Targ value from the layer
+	out.UnitVals(&ss.TmpVals2, "Targ")   //writes Targ value from the layer
+	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
 	//en.SetReward(mxi)
 
-	en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference + threshold (in sir_env)
+	if ss.RewardFunction == "decoded" {
+		en.SetRewardThres(math.Abs(float64(outdecode-outdecode2)), ss.RewThreshold) //comparing the decoded values.
 
+	} else if ss.RewardFunction == "unitdifference" {
+		en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference in unit activation + threshold (in sir_env) //
+
+	}
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(leabra.LeabraLayer).AsLeabra()
 	ly.ApplyExt1DTsr(pats)
@@ -838,6 +856,9 @@ func (ss *Sim) InitStats() {
 	ss.EpcAvgSSE = 0
 	ss.EpcPctErr = 0
 	ss.EpcCosDiff = 0
+	ss.TrlDecodedDiff = 0
+	ss.SumTrlDecodedDiff = 0
+	ss.EpcDecodedDiff = 0
 }
 
 // TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
@@ -859,6 +880,21 @@ func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
 	} else {
 		ss.TrlErr = 0
 	}
+
+	pc := popcode.Ring{}             //ring
+	pc.Defaults()                    //ring
+	pc.Min = ss.pop_min              //ring
+	pc.Max = ss.pop_max              //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
+
+	out.UnitVals(&ss.TmpVals, "ActM")
+	outdecode := pc.Decode(ss.TmpVals)
+
+	out.UnitVals(&ss.TmpVals2, "Targ")   //writes Act value from the layer
+	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
+
+	ss.TrlDecodedDiff = math.Abs(float64(outdecode - outdecode2))
+
 	if accum {
 		ss.SumDA += ss.TrlDA
 		ss.SumAbsDA += ss.TrlAbsDA
@@ -867,6 +903,7 @@ func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
 		ss.SumSSE += ss.TrlSSE
 		ss.SumAvgSSE += ss.TrlAvgSSE
 		ss.SumCosDiff += ss.TrlCosDiff
+		ss.SumTrlDecodedDiff += ss.TrlDecodedDiff
 	}
 	return
 }
@@ -888,7 +925,14 @@ func (ss *Sim) TrainEpoch() {
 func (ss *Sim) TrainRun() {
 	var err error
 	//fnm := ss.LogFileName("epc")
-	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	fnm := ""
+	if ss.RunLocation == "home" {
+		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	} else if ss.RunLocation == "cluster" {
+
+		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	}
+	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 	ss.TrnEpcFile, err = os.Create(fnm)
 
 	ss.StopNow = false
@@ -1015,9 +1059,17 @@ func (ss *Sim) RunTestAll() {
 
 	var err error
 
+	fnm := ""
+	if ss.RunLocation == "home" {
+		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv"
+	} else if ss.RunLocation == "cluster" {
+
+		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv"
+	}
+
 	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/"+ss.RunName()+".csv"
 
-	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv"
+	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv"
 	ss.TstTrlFile, err = os.Create(fnm)
 
 	ss.StopNow = false
@@ -1172,6 +1224,8 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	ss.EpcPctCor = 1 - ss.EpcPctErr
 	ss.EpcCosDiff = ss.SumCosDiff / nt
 	ss.SumCosDiff = 0
+	ss.EpcDecodedDiff = ss.SumTrlDecodedDiff / nt
+	ss.SumTrlDecodedDiff = 0
 	if ss.FirstZero < 0 && ss.EpcPctErr == 0 {
 		ss.FirstZero = epc
 	}
@@ -1191,6 +1245,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("EpcDecodedDiff", row, ss.EpcDecodedDiff)
 	dt.SetCellFloat("SSE", row, ss.EpcSSE)
 	dt.SetCellFloat("AvgSSE", row, ss.EpcAvgSSE)
 	dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
@@ -1220,6 +1275,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
+		{"EpcDecodedDiff", etensor.FLOAT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"PctErr", etensor.FLOAT64, nil, nil},
@@ -1240,6 +1296,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("EpcDecodedDiff", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0) // default plot
 	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
@@ -1262,6 +1319,8 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	epc := ss.TestEnv.Epoch.Prv // this is triggered by increment so use previous value
 
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
+	inp := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
+	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 
 	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
 	//pc.Defaults() //no ring
@@ -1285,6 +1344,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("Trial", row, float64(trl))
 	dt.SetCellString("TrialName", row, ss.TestEnv.String())
 	dt.SetCellFloat("Err", row, ss.TrlErr)
+	dt.SetCellFloat("TrlDecodedDiff", row, ss.TrlDecodedDiff)
 	dt.SetCellFloat("SSE", row, ss.TrlSSE)
 	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
@@ -1307,9 +1367,20 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
 	dt.SetCellFloat("OutTarget", row, float64(outdecode2))
 
+	inp.UnitVals(&ss.TmpValsInp, "Act")
+	indecode := pc.Decode(ss.TmpValsInp)
+	dt.SetCellFloat("InDecode", row, float64(indecode))
+
 	dt.SetCellString("Lesion", row, ss.Lesion)
 	dt.SetCellFloat("LesionProp", row, ss.LesionProp)
 	dt.SetCellString("LesionApplied", row, ss.LesionApplied)
+
+	pfc.UnitVals(&ss.TmpValsPFC, "Act")
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		pfcdecode := pc.Decode(ss.TmpValsPFC[stripe*ss.LayerSize : (stripe+1)*ss.LayerSize])
+		stnm := "stripe" + string(stripe)
+		dt.SetCellFloat(stnm, row, float64(pfcdecode))
+	}
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
@@ -1335,6 +1406,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		{"Trial", etensor.INT64, nil, nil},
 		{"TrialName", etensor.STRING, nil, nil},
 		{"Err", etensor.FLOAT64, nil, nil},
+		{"TrlDecodedDiff", etensor.FLOAT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
@@ -1346,10 +1418,17 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		sch = append(sch, etable.Column{lnm, etensor.FLOAT64, ly.Shp.Shp, nil})
 	}
+
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		stnm := "stripe" + string(stripe)
+		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
+	}
+
 	sch = append(sch, etable.Schema{
 
 		{"OutDecode", etensor.FLOAT64, nil, nil},    //adds outdecode value to table
 		{"OutTarget", etensor.FLOAT64, nil, nil},    //adds target value to table
+		{"InDecode", etensor.FLOAT64, nil, nil},     //adds input value to table
 		{"Lesion", etensor.STRING, nil, nil},        //adds lesion type
 		{"LesionProp", etensor.FLOAT64, nil, nil},   //adds prop of trials with lesion
 		{"LesionApplied", etensor.STRING, nil, nil}, //add if lesion was actually applied in that test trial
@@ -1367,6 +1446,7 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("Trial", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
+	plt.SetColParams("TrlDecodedDiff", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
@@ -1791,6 +1871,8 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
 	flag.StringVar(&ss.TrainEnv.StimDist, "TrainStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for train")
 	flag.StringVar(&ss.TestEnv.StimDist, "TestStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for test")
+	flag.StringVar(&ss.RewardFunction, "RewardFunction", "unitdifference", "reward function either unitdifference or decoded")
+	flag.StringVar(&ss.RunLocation, "RunLocation", "cluster", "location where code is being run so that files can be saved in correct place")
 	flag.Parse()
 	ss.Init()
 
@@ -1847,7 +1929,7 @@ func (ss *Sim) CmdArgs() {
 
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			ss.Tag = "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64)
+			ss.Tag = "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
 			//	ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
 			//fmt.Print("/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv")
@@ -1872,7 +1954,15 @@ func (ss *Sim) CmdArgs() {
 	if saveEpcLog {
 		var err error
 		//fnm := ss.LogFileName("epc")
-		fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+
+		fnm := ""
+		if ss.RunLocation == "home" {
+			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		} else if ss.RunLocation == "cluster" {
+
+			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		}
+		//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 		ss.TrnEpcFile, err = os.Create(fnm)
 		if err != nil {
 			log.Println(err)
