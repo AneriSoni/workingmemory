@@ -287,7 +287,8 @@ type Sim struct {
 	pop_max   float32 `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
 	pop_sigma float64 `def:"0.2" viewif:"Code=GaussBump" desc:"sigma parameter of a gaussian specifying the tuning width of the coarse-coded units, in normalized 0-1 range, float64 so can use tags, otherwise inside setrange, need to be float32 so will be changed before inputting there"`
 
-	RewThreshold float64 `desc: "threshold for reward function"`
+	RewThreshold   float64 `desc: "threshold for reward function"`
+	RewardFunction string  `desc: "reward function, if decoded - use decoded value, otherwise use the unit activations function "`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -316,6 +317,7 @@ type Sim struct {
 	Stripes       int     `inactive:"+" desc:"number of pfc stripes"`
 	Experiment    string  `inactive:"+" desc:"type of experiment to run"`
 	NumModels     int     `inactive:"+" desc:"number of models to run"`
+	RunLocation   string  `inactive:"+" desc:"location run, determines file save location"`
 
 	// internal state - view:"-"
 	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -458,6 +460,7 @@ func (ss *Sim) ConfigEnv() {
 	//ss.pop_sigma = 0.15 // need to optimize over this parameter //no ring
 
 	ss.RewThreshold = 10 //changing this here doesn't work, need to change in tag
+	ss.RewardFunction = "unitdifference"
 
 	ss.Lesion = "None"
 	ss.LesionProp = 0
@@ -799,8 +802,13 @@ func (ss *Sim) ApplyReward(train bool) {
 	//mxi := out.Pools[0].Inhib.Act.MaxIdx
 	//en.SetReward(mxi)
 
-	en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference + threshold (in sir_env)
+	if ss.RewardFunction == "decoded" {
+		en.SetRewardThres(math.Abs(float64(outdecode-outdecode2)), ss.RewThreshold) //comparing the decoded values.
 
+	} else if ss.RewardFunction == "unitdifference" {
+		en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference in unit activation + threshold (in sir_env) //
+
+	}
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(leabra.LeabraLayer).AsLeabra()
 	ly.ApplyExt1DTsr(pats)
@@ -940,7 +948,14 @@ func (ss *Sim) TrainRun() {
 
 	var err error
 	//fnm := ss.LogFileName("epc")
-	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	fnm := ""
+	if ss.RunLocation == "home" {
+		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	} else if ss.RunLocation == "cluster" {
+
+		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	}
+	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 	ss.TrnEpcFile, err = os.Create(fnm)
 
 	ss.StopNow = false
@@ -1066,10 +1081,16 @@ func (ss *Sim) TestAll() {
 func (ss *Sim) RunTestAll() {
 
 	var err error
+	fnm := ""
+	if ss.RunLocation == "home" {
+		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	} else if ss.RunLocation == "cluster" {
 
+		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	}
 	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/"+ss.RunName()+".csv"
 
-	fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 	ss.TstTrlFile, err = os.Create(fnm)
 
 	ss.StopNow = false
@@ -1867,6 +1888,8 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
 	flag.StringVar(&ss.TrainEnv.StimDist, "TrainStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for train")
 	flag.StringVar(&ss.TestEnv.StimDist, "TestStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for test")
+	flag.StringVar(&ss.RewardFunction, "RewardFunction", "unitdifference", "reward function either unitdifference or decoded")
+	flag.StringVar(&ss.RunLocation, "RunLocation", "cluster", "location where code is being run so that files can be saved in correct place")
 	flag.Parse()
 	ss.Init()
 
@@ -1922,7 +1945,7 @@ func (ss *Sim) CmdArgs() {
 
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			ss.Tag = "hybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64)
+			ss.Tag = "hybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
 			//ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
@@ -1945,7 +1968,14 @@ func (ss *Sim) CmdArgs() {
 	if saveEpcLog {
 		var err error
 		//fnm := ss.LogFileName("epc")
-		fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		fnm := ""
+		if ss.RunLocation == "home" {
+			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		} else if ss.RunLocation == "cluster" {
+
+			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		}
+		//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 
 		ss.TrnEpcFile, err = os.Create(fnm)
 		if err != nil {
