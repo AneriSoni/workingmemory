@@ -1085,10 +1085,10 @@ func (ss *Sim) RunTestAll() {
 	var err error
 	fnm := ""
 	if ss.RunLocation == "home" {
-		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 	} else if ss.RunLocation == "cluster" {
 
-		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 	}
 	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/"+ss.RunName()+".csv"
 

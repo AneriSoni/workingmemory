@@ -1039,10 +1039,10 @@ func (ss *Sim) RunTestAll() {
 
 	fnm := ""
 	if ss.RunLocation == "home" {
-		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + ".csv"
 	} else if ss.RunLocation == "cluster" {
 
-		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + ".csv"
 	}
 
 	//fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/"+ss.RunName()+".csv"
