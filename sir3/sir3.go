@@ -852,6 +852,9 @@ func (ss *Sim) InitStats() {
 	ss.EpcAvgSSE = 0
 	ss.EpcPctErr = 0
 	ss.EpcCosDiff = 0
+	ss.TrlDecodedDiff = 0
+	ss.SumTrlDecodedDiff = 0
+	ss.EpcDecodedDiff = 0
 }
 
 // TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
@@ -873,6 +876,21 @@ func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
 	} else {
 		ss.TrlErr = 0
 	}
+
+	pc := popcode.Ring{}             //ring
+	pc.Defaults()                    //ring
+	pc.Min = ss.pop_min              //ring
+	pc.Max = ss.pop_max              //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
+
+	out.UnitVals(&ss.TmpVals, "ActM")
+	outdecode := pc.Decode(ss.TmpVals)
+
+	out.UnitVals(&ss.TmpVals2, "Targ")   //writes Act value from the layer
+	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
+
+	ss.TrlDecodedDiff = math.Abs(float64(outdecode - outdecode2))
+
 	if accum {
 		ss.SumDA += ss.TrlDA
 		ss.SumAbsDA += ss.TrlAbsDA
@@ -881,6 +899,7 @@ func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
 		ss.SumSSE += ss.TrlSSE
 		ss.SumAvgSSE += ss.TrlAvgSSE
 		ss.SumCosDiff += ss.TrlCosDiff
+		ss.SumTrlDecodedDiff += ss.TrlDecodedDiff
 	}
 	return
 }
@@ -1202,6 +1221,8 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	ss.EpcPctCor = 1 - ss.EpcPctErr
 	ss.EpcCosDiff = ss.SumCosDiff / nt
 	ss.SumCosDiff = 0
+	ss.EpcDecodedDiff = ss.SumTrlDecodedDiff / nt
+	ss.SumTrlDecodedDiff = 0
 	if ss.FirstZero < 0 && ss.EpcPctErr == 0 {
 		ss.FirstZero = epc
 	}
@@ -1221,6 +1242,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("EpcDecodedDiff", row, ss.EpcDecodedDiff)
 	dt.SetCellFloat("SSE", row, ss.EpcSSE)
 	dt.SetCellFloat("AvgSSE", row, ss.EpcAvgSSE)
 	dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
@@ -1250,6 +1272,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
+		{"EpcDecodedDiff", etensor.FLOAT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"PctErr", etensor.FLOAT64, nil, nil},
@@ -1270,6 +1293,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("EpcDecodedDiff", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0) // default plot
 	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
@@ -1317,6 +1341,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("Trial", row, float64(trl))
 	dt.SetCellString("TrialName", row, ss.TestEnv.String())
 	dt.SetCellFloat("Err", row, ss.TrlErr)
+	dt.SetCellFloat("TrlDecodedDiff", row, ss.TrlDecodedDiff)
 	dt.SetCellFloat("SSE", row, ss.TrlSSE)
 	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
@@ -1378,6 +1403,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		{"Trial", etensor.INT64, nil, nil},
 		{"TrialName", etensor.STRING, nil, nil},
 		{"Err", etensor.FLOAT64, nil, nil},
+		{"TrlDecodedDiff", etensor.FLOAT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
@@ -1415,6 +1441,7 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("Trial", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
+	plt.SetColParams("TrlDecodedDiff", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)

@@ -574,8 +574,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
 	pj = net.ConnectLayers(inp, chunk, fmin, emer.Forward)
-	//pj=net.ConnectLayers(pfcMntD,chunk,fmin2,emer.Forward) //original model
-	pj = net.ConnectLayers(pfcMntD, chunk, fminbot, emer.Forward) //hybrid model
+	pj = net.ConnectLayers(pfcMntD, chunk, fmin2, emer.Forward) //original model
+	//pj = net.ConnectLayers(pfcMntD, chunk, fminbot, emer.Forward) //hybrid model, connect to only 1 pfc layer
 	pj.SetClass("PFCMntDChunk")
 	pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
 	//pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
@@ -616,10 +616,34 @@ func (ss *Sim) NewRndSeed() {
 // use tabs to achieve a reasonable formatting overall
 // and add a few tabs at the end to allow for expansion..
 func (ss *Sim) Counters(train bool) string {
+	//train is a true/false to mark if trial is a train or test trial
+	//can add the decoded value of chunk and 2 pfc stripes here. (so that we can compare with the input)
+	pc := popcode.Ring{}             //ring
+	pc.Defaults()                    //ring
+	pc.Min = ss.pop_min              //ring
+	pc.Max = ss.pop_max              //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
+
+	chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
+	pfcmntD := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+	pfcmnt := ss.Net.LayerByName("PFCmnt").(leabra.LeabraLayer).AsLeabra()
+
+	chunk.UnitVals(&ss.TmpValsCh, "Act")
+	chdecode := pc.Decode(ss.TmpValsCh)
+
+	pfcmntD.UnitVals(&ss.TmpValsPFC, "Act")
+	pfcmntD1 := pc.Decode(ss.TmpValsPFC[0*ss.LayerSize : (0+1)*ss.LayerSize])
+	pfcmntD2 := pc.Decode(ss.TmpValsPFC[1*ss.LayerSize : (1+1)*ss.LayerSize])
+
+	pfcmnt.UnitVals(&ss.TmpValsPFC, "Act")
+	pfcmnt1 := pc.Decode(ss.TmpValsPFC[0*ss.LayerSize : (0+1)*ss.LayerSize])
+	pfcmnt2 := pc.Decode(ss.TmpValsPFC[1*ss.LayerSize : (1+1)*ss.LayerSize])
+
 	if train {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String())
+		//syntax for this is "title" \t%d(or%s)\t
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\nChunk:\t%v\tPFCmnt1:\t%v\tPFCmnt2:\t%v\tPFCmntD1:\t%v\tPFCmntD2:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String(), chdecode, pfcmnt1, pfcmnt2, pfcmntD1, pfcmntD2)
 	} else {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String())
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\nChunk:\t%v\tPFCmnt1:\t%v\tPFCmnt2:\t%v\tPFCmntD1:\t%v\tPFCmntD2:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String(), chdecode, pfcmnt1, pfcmnt2, pfcmntD1, pfcmntD2)
 	}
 }
 

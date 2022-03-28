@@ -73,6 +73,65 @@ class Chunking():
         plt.xlabel('Diff between Input and Maintained')
         plt.ylabel('Diff between Input and Chunk')
         plt.title('Chunk Layer')
+ 
+    
+#other defs not yet in compiled defs
+def training_curve_indv(base, specific_file = 'None'):
+    #input is the base file with all the model files saved into it
+    files = os.listdir(base)
+    if specific_file == 'None':
+        full_files = [base+f for f in files if 'EpcLog' in f]
+    else:
+        full_files = [base+f for f in files if 'EpcLog' in f]
+        full_files = [f for f in full_files if specific_file in f]
+    for f in full_files:
+        if 'model0_' in f:
+            plt.figure()
+            df = pd.read_csv(f, sep = '\t')
+            SSE = df['#SSE']
+            Epoch = df['|Epoch']
+            plt.plot(Epoch,SSE)
+            plt.show()
+#         elif 'model10_' in f: #this should be fixed now because i fixed the max number of runs. 
+#             print('skipping model 10')
+        else:
+            #print(f)
+            plt.figure()
+            df = pd.read_csv(f,sep = '\t', header = None)
+            SSE  = df[2]
+            Epoch = df[1]
+            plt.plot(Epoch[1:],SSE[1:])
+            plt.show()
+def training_curve_average(base, specific_file = 'None', additional_title = ''):
+    files = os.listdir(base)
+    if specific_file == 'None':
+        full_files = [base+f for f in files if 'EpcLog' in f]
+    else:
+        full_files = [base+f for f in files if 'EpcLog' in f]
+        full_files = [f for f in full_files if specific_file in f]
+    SSE=[]
+    Epoch = []
+    for f in full_files:
+        if 'model0_' in f:
+            df = pd.read_csv(f, sep = '\t')
+            SSE.append(df['#SSE'][:500])
+            Epoch.append(df['|Epoch'][:500])
+            
+#         elif 'model10_' in f:
+#             print('skipping model 10')
+        else:
+            df = pd.read_csv(f,sep = '\t', header = None)
+            SSE.append(df[2][:500])
+            #Epoch = df[1]
+    SSE_np = np.array(SSE)
+    SSE_avg = np.mean(SSE_np, axis = 0)
+    plt.plot(Epoch[0],SSE_avg)
+    if "StimRange0to45" in f:
+        plt.title(f.split('workingmemory')[1].split('/')[1]+' StimDist Max 45'+additional_title)
+    else:
+        plt.title(f.split('workingmemory')[1].split('/')[1]+additional_title)
+    plt.show()
+    return SSE_avg,Epoch
         
 
 class Precision():
@@ -92,7 +151,7 @@ class Precision():
                 df_include.append('False')
         df.index = df_include
         df_recall = df.loc['True']
-
+        self.df_recall = df_recall
         #pull out target and actual decoded output for recall and all trials
         decodeout = df['#OutDecode']
         target = df['#OutTarget']
@@ -104,7 +163,8 @@ class Precision():
         self.alldiff = diff
         
         diffrecall =np.array(decodeout_recall)-np.array(target_recall)
-        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version
+
+        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version # don't need this anymore?
         #diffrecall = np.mod(diffrecall, stim_diff)  #this is wrong because the errors are from 0 to 360 instead of centered at 0.
         
         #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)/stim_diff*360 #degrees
@@ -121,6 +181,33 @@ class Precision():
         _,diffrecall = self.get_diffs(dat)
         self.diffrecall = diffrecall
         return diffrecall
+    
+    def err_recall_type(self, file, sep = '\t'):
+        #this only makes sense on a model by model basis - only one model at a time - because one model could learn for recall 1 and another
+        #for recall2 and then they would cancel each other out. 
+        df = pd.read_csv(file,sep)
+        self.dat = df
+        _,diffrecall = self.get_diffs(df)
+        
+        recall_type = []
+        df_recall = self.df_recall
+        for i in range(len(df_recall)):
+            trial = df_recall['$TrialName'].iloc[i]
+            if 'Recall1' in trial:
+                recall_type.append('Recall1')
+            elif 'Recall2' in trial:
+                recall_type.append('Recall2')
+        
+        recall1_err = []
+        recall2_err = []
+        
+        for i in range(len(diffrecall)):
+            if recall_type[i] == 'Recall1':
+                recall1_err.append(diffrecall[i])
+            elif recall_type[i] == 'Recall2':
+                recall2_err.append(diffrecall[i])
+            
+        return recall1_err,recall2_err
     
         
     def create_dat(files, var, var_values): 
