@@ -163,8 +163,8 @@ class Precision():
         self.alldiff = diff
         
         diffrecall =np.array(decodeout_recall)-np.array(target_recall)
-
-        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version # don't need this anymore?
+        #diffrecall = np.abs(diffrecall) #this is wrong wrong wrong....uncomment this (comment out the below line) and plot for reason why. 
+        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version 
         #diffrecall = np.mod(diffrecall, stim_diff)  #this is wrong because the errors are from 0 to 360 instead of centered at 0.
         
         #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)/stim_diff*360 #degrees
@@ -197,7 +197,6 @@ class Precision():
                 recall_type.append('Recall1')
             elif 'Recall2' in trial:
                 recall_type.append('Recall2')
-        
         recall1_err = []
         recall2_err = []
         
@@ -208,6 +207,37 @@ class Precision():
                 recall2_err.append(diffrecall[i])
             
         return recall1_err,recall2_err
+    
+    def err_recall_type_sir3(self, file, sep = '\t'):
+        #this only makes sense on a model by model basis - only one model at a time - because one model could learn for recall 1 and another
+        #for recall2 and then they would cancel each other out. 
+        df = pd.read_csv(file,sep)
+        self.dat = df
+        _,diffrecall = self.get_diffs(df)
+        
+        recall_type = []
+        df_recall = self.df_recall
+        for i in range(len(df_recall)):
+            trial = df_recall['$TrialName'].iloc[i]
+            if 'Recall1' in trial:
+                recall_type.append('Recall1')
+            elif 'Recall2' in trial:
+                recall_type.append('Recall2')
+            elif 'Recall3' in trial:
+                recall_type.append('Recall3')
+        recall1_err = []
+        recall2_err = []
+        recall3_err = []
+        
+        for i in range(len(diffrecall)):
+            if recall_type[i] == 'Recall1':
+                recall1_err.append(diffrecall[i])
+            elif recall_type[i] == 'Recall2':
+                recall2_err.append(diffrecall[i])
+            elif recall_type[i] == 'Recall3':
+                recall3_err.append(diffrecall[i])
+            
+        return recall1_err,recall2_err,recall3_err
     
         
     def create_dat(files, var, var_values): 

@@ -762,7 +762,13 @@ func (ss *Sim) ApplyReward(train bool) {
 	//en.SetReward(mxi)
 
 	if ss.RewardFunction == "decoded" {
-		en.SetRewardThres(math.Abs(float64(outdecode-outdecode2)), ss.RewThreshold) //comparing the decoded values.
+		decodeddiff := float64(outdecode - outdecode2)
+		stim_diff_half := float64(180) //the stim can range from 0 to 360. and (360-0)/2 - 180
+		stim_diff_shift := float64(90) //this is the shifting factor.
+		decodeddiff_final := math.Mod(decodeddiff+stim_diff_shift, stim_diff_half) - stim_diff_shift
+		en.SetRewardThres(math.Abs(decodeddiff_final), ss.RewThreshold) //comparing the decoded values.
+
+		//en.SetRewardThres(math.Abs(float64(outdecode-outdecode2)), ss.RewThreshold) //comparing the decoded values.
 
 	} else if ss.RewardFunction == "unitdifference" {
 		en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference in unit activation + threshold (in sir_env) //
