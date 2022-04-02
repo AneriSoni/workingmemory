@@ -88,7 +88,8 @@ def training_curve_indv(base, specific_file = 'None'):
         if 'model0_' in f:
             plt.figure()
             df = pd.read_csv(f, sep = '\t')
-            SSE = df['#SSE']
+            #SSE = df['#SSE']
+            SSE = df['#EpcDecodedDiff']
             Epoch = df['|Epoch']
             plt.plot(Epoch,SSE)
             plt.show()

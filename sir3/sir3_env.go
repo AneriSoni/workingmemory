@@ -173,6 +173,13 @@ func (ev *SIREnv) SetRewardThres(netout float64, threshold float64) bool {
 	return rw
 }
 
+func (ev *SIREnv) SetRewardCont(netout float64, stim_diff_half float64) bool {
+	//here netout is the differnece between the decoded input and decoded output.
+	rw := true
+	ev.Reward.Values[0] = (stim_diff_half - netout) / stim_diff_half
+	return rw
+}
+
 // Step the SIR task
 func (ev *SIREnv) StepSIR() {
 	for {

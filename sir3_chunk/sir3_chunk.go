@@ -289,6 +289,7 @@ type Sim struct {
 
 	RewThreshold   float64 `desc: "threshold for reward function"`
 	RewardFunction string  `desc: "reward function, if decoded - use decoded value, otherwise use the unit activations function "`
+	RewardType     string  `desc: "type of reward function - either cont or based on threshold"`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -465,6 +466,7 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.RewThreshold = 10 //changing this here doesn't work, need to change in tag
 	ss.RewardFunction = "unitdifference"
+	ss.RewardType = ""
 
 	ss.Lesion = "None"
 	ss.LesionProp = 0
@@ -813,12 +815,24 @@ func (ss *Sim) ApplyReward(train bool) {
 		stim_diff_half := float64(180) //the stim can range from 0 to 360. and (360-0)/2 - 180
 		stim_diff_shift := float64(90) //this is the shifting factor.
 		decodeddiff_final := math.Mod(decodeddiff+stim_diff_shift, stim_diff_half) - stim_diff_shift
-		en.SetRewardThres(math.Abs(decodeddiff_final), ss.RewThreshold) //comparing the decoded values.
+		if ss.RewardType == "cont" {
+
+			en.SetRewardCont(math.Abs(decodeddiff_final), stim_diff_half)
+
+		} else {
+			en.SetRewardThres(math.Abs(decodeddiff_final), ss.RewThreshold) //comparing the decoded values.
+		}
+		//en.SetRewardThres(math.Abs(decodeddiff_final), ss.RewThreshold) //comparing the decoded values.
 
 		//en.SetRewardThres(math.Abs(float64(outdecode-outdecode2)), ss.RewThreshold) //comparing the decoded values.
 
 	} else if ss.RewardFunction == "unitdifference" {
-		en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference in unit activation + threshold (in sir_env) //
+		if ss.RewardType == "cont" {
+			en.SetRewardCont(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), float64(ss.LayerSize))
+		} else {
+			en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference in unit activation + threshold (in sir_env) //
+		}
+		//en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference in unit activation + threshold (in sir_env) //
 
 	}
 	pats := en.State("Reward")
@@ -1928,10 +1942,12 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.TrainEnv.StimDist, "TrainStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for train")
 	flag.StringVar(&ss.TestEnv.StimDist, "TestStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for test")
 	flag.StringVar(&ss.RewardFunction, "RewardFunction", "unitdifference", "reward function either unitdifference or decoded")
+	flag.StringVar(&ss.RewardType, "RewardType", "", "reward function either continuous or based on threshold")
 	flag.StringVar(&ss.RunLocation, "RunLocation", "cluster", "location where code is being run so that files can be saved in correct place")
 	flag.Parse()
 	ss.Init()
 
+	fmt.Printf("RewardType: %s\n", ss.RewardType)
 	if note != "" {
 		fmt.Printf("note: %s\n", note)
 	}
