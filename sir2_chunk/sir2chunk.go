@@ -576,8 +576,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
 	pj = net.ConnectLayers(inp, chunk, fmin, emer.Forward)
-	//pj = net.ConnectLayers(pfcMntD, chunk, fmin2, emer.Forward) //original model
-	pj = net.ConnectLayers(pfcMntD, chunk, fminbot, emer.Forward) //hybrid model, connect to only 1 pfc layer
+	pj = net.ConnectLayers(pfcMntD, chunk, fmin2, emer.Forward) //original model
+	//pj = net.ConnectLayers(pfcMntD, chunk, fminbot, emer.Forward) //hybrid model, connect to only 1 pfc layer
 	pj.SetClass("PFCMntDChunk")
 	pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
 	//pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
