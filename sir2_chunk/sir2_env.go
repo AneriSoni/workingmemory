@@ -53,6 +53,8 @@ type SIREnv struct {
 	Trial     env.Ctr         `view:"inline" desc:"trial is the step counter within epoch"`
 	StimType  string          `desc:"continuous stimulus or fixed"`
 
+	StimLoc int `desc:"location of the stimulus- when recall 1, this will give stripe location for 1., should be 1 or 2 or 3; 0 for nonrecall trials "`
+
 	StimDist string  `desc:"true or false, if the distance between stimuli should be constrianed"`
 	MinDist  float64 `desc:"minimum distance between two stimuli"`
 	MaxDist  float64 `desc:"maximum distance between two simuli"`

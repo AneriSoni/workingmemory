@@ -46,6 +46,7 @@ import (
 func main() {
 	TheSim.New()
 	TheSim.Config()
+	//TheSim.CmdArgs()
 	if len(os.Args) > 1 {
 		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
@@ -268,6 +269,7 @@ type Sim struct {
 	TrnEpcLog   *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
 	TstEpcLog   *etable.Table     `view:"no-inline" desc:"testing epoch-level log data"`
 	TstTrlLog   *etable.Table     `view:"no-inline" desc:"testing trial-level log data"`
+	TrnTrlLog   *etable.Table     `view:"no-inline" desc:"training trial-level log data"`
 	RunLog      *etable.Table     `view:"no-inline" desc:"summary log of each run"`
 	RunStats    *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
 	SimMat      *simat.SimMat     `view:"no-inline" desc:"similarity matrix"`
@@ -285,6 +287,7 @@ type Sim struct {
 	TrainUpdt   leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
 	TestUpdt    leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
 	TstRecLays  []string          `desc:"names of layers to record activations etc of during testing"`
+	TrnRecLays  []string          `desc:"names of layers to record activations etc of during training"`
 
 	InOneTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
 	InTwoTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
@@ -294,6 +297,10 @@ type Sim struct {
 	TmpValsInp []float32 `view:"-" desc:"for holding decoded layer values"`
 	TmpValsCh  []float32 `view:"-" desc:"for holding decoded layer values"`
 	TmpValsPFC []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsGpi []float32 `view:"-" desc:"for holding decoded layer values"`
+
+	PFCmntD1Val []float32 `view:"-" desc:"for pfcmntD stripe 1 (bottom) values"`
+	PFCmntD2Val []float32 `view:"-" desc:"for pfcmntD stripe 2 (top) values"`
 
 	pop_min   float32 `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
 	pop_max   float32 `desc:"minimum value representable -- for GaussBump, typically include extra to allow mean with activity on either side to represent the lowest value you want to encode"`
@@ -302,6 +309,8 @@ type Sim struct {
 	RewThreshold   float64 `desc: "threshold for reward function"`
 	RewardFunction string  `desc: "reward function, if decoded - use decoded value, otherwise use the unit activations function "`
 	RewardType     string  `desc: "type of reward function - either cont or based on threshold"`
+
+	StimStripe [][]float64 `desc: "tells which stimulus is stored in which stripe"`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -351,10 +360,12 @@ type Sim struct {
 	TrnEpcPlot   *eplot.Plot2D               `view:"-" desc:"the training epoch plot"`
 	TstEpcPlot   *eplot.Plot2D               `view:"-" desc:"the testing epoch plot"`
 	TstTrlPlot   *eplot.Plot2D               `view:"-" desc:"the test-trial plot"`
+	TrnTrlPlot   *eplot.Plot2D               `view:"-" desc:"the test-trial plot"`
 	RunPlot      *eplot.Plot2D               `view:"-" desc:"the run plot"`
 	TrnEpcFile   *os.File                    `view:"-" desc:"log file"`
 	RunFile      *os.File                    `view:"-" desc:"log file"`
 	TstTrlFile   *os.File                    `view: "-" desc: "log file"`
+	TrnTrlFile   *os.File                    `view: "-" desc: "log file"`
 	ValsTsrs     map[string]*etensor.Float32 `view:"-" desc:"for holding layer values"`
 	SaveWts      bool                        `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
 	NoGui        bool                        `view:"-" desc:"if true, runing in no GUI mode"`
@@ -379,6 +390,7 @@ func (ss *Sim) New() {
 	ss.TrnEpcLog = &etable.Table{}
 	ss.TstEpcLog = &etable.Table{}
 	ss.TstTrlLog = &etable.Table{}
+	ss.TrnTrlLog = &etable.Table{}
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.SimMat = &simat.SimMat{}
@@ -388,6 +400,7 @@ func (ss *Sim) New() {
 	ss.TrainUpdt = leabra.AlphaCycle //leabra.AlphaCycle
 	ss.TestUpdt = leabra.AlphaCycle
 	ss.TstRecLays = []string{"Input", "Output", "Chunk", "GPiThal", "PFCmntD", "PFCoutD"}
+	ss.TrnRecLays = []string{"PFCmntD"}
 	ss.Defaults()
 }
 
@@ -406,6 +419,7 @@ func (ss *Sim) Config() {
 	ss.ConfigTrnEpcLog(ss.TrnEpcLog)
 	ss.ConfigTstEpcLog(ss.TstEpcLog)
 	ss.ConfigTstTrlLog(ss.TstTrlLog)
+	ss.ConfigTrnTrlLog(ss.TrnTrlLog)
 	ss.ConfigRunLog(ss.RunLog)
 	ss.ConfigInTsrs()
 
@@ -486,6 +500,12 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.LayerSize = 20
 	ss.Stripes = 2
+
+	ss.StimStripe = make([][]float64, ss.Stripes)
+	for i := range ss.StimStripe {
+		ss.StimStripe[i] = make([]float64, 2) //this is sir2 so 2 store types.
+	}
+
 }
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
@@ -499,12 +519,14 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	out := net.AddLayer2D("Output", 1, ss.LayerSize, emer.Target)
 	hid := net.AddLayer2D("Hidden", ss.LayerSize, ss.LayerSize, emer.Hidden)
 	chunk := net.AddLayer2D("Chunk", 1, ss.LayerSize, emer.Hidden)
+	stimloc := net.AddLayer2D("StimLoc", 1, ss.Stripes, emer.Input)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	//out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	out.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	ctrl.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", XAlign: relpos.Left, Space: 2})
 	hid.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "CtrlInput", XAlign: relpos.Left, Space: 2})
 	chunk.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Hidden", XAlign: relpos.Left, Space: 3})
+	stimloc.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "CtrlInput", YAlign: relpos.Front, Space: 1})
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
 	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, ss.LayerSize)
@@ -553,11 +575,18 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcOutD, rp, full, emer.Forward, &rl.RWPrjn{})
+	net.ConnectLayersPrjn(stimloc, rp, full, emer.Forward, &rl.RWPrjn{})
 
 	pj := net.ConnectLayersPrjn(ctrl, mtxGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
 	pj = net.ConnectLayersPrjn(ctrl, mtxNoGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
+
+	pj = net.ConnectLayersPrjn(stimloc, mtxGo, full, emer.Forward, &pbwm.MatrixTracePrjn{})
+	pj.SetClass("MatrixPrjn")
+	pj = net.ConnectLayersPrjn(stimloc, mtxNoGo, full, emer.Forward, &pbwm.MatrixTracePrjn{})
+	pj.SetClass("MatrixPrjn")
+
 	pj = net.ConnectLayers(inp, pfcMnt, fmintop, emer.Forward) //hybrid model
 	//pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward) //original model
 	pj.SetClass("PFCFixed")
@@ -724,6 +753,111 @@ func (ss *Sim) AlphaCyc(train bool) {
 	}
 }
 
+func (ss *Sim) LocateItem(en env.Env) {
+	//after the trial, this will go in and see which pfcmntD stripe the
+	//current store was gated into.
+	//this will happen only on the store trials. (for now, not the ignore)
+	//this will happen after the logging - so should be able to use the tables as a reference
+	ly := ss.Net.LayerByName("GPiThal").(leabra.LeabraLayer).AsLeabra()
+	ly.UnitVals(&ss.TmpValsGpi, "Act")
+	//fmt.Printf("GpiThal %v", ss.TmpValsGpi)
+	//ss.TmpValsGpi[0]: stripe 1 open store
+	//ss.TmpValsGpi[1]: stripe 1 output gate
+	//ss.TmpValsGpi[2]: stripe 2 open store
+	//ss.TmpValsGpi[3]: stripe 2 output gate
+
+	ly2 := ss.Net.LayerByName("PFCmnt").(leabra.LeabraLayer).AsLeabra()
+	ly2.UnitVals(&ss.TmpValsPFC, "Act")
+	ly3 := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
+	ly3.UnitVals(&ss.TmpValsInp, "Act")
+	pc := popcode.Ring{}                                                        //ring
+	pc.Defaults()                                                               //ring
+	pc.Min = ss.pop_min                                                         //ring
+	pc.Max = ss.pop_max                                                         //ring
+	pc.Sigma = float32(ss.pop_sigma)                                            //ring
+	PFCmnt1Val := pc.Decode(ss.TmpValsPFC[0*ss.LayerSize : (0+1)*ss.LayerSize]) //what is in pfcmnt1 (from chunk)
+	PFCmnt2Val := pc.Decode(ss.TmpValsPFC[1*ss.LayerSize : (1+1)*ss.LayerSize]) //what is in pfcmnt2 (from input)
+	InpVal := pc.Decode(ss.TmpValsInp)
+	lastidx := len(ss.PFCmntD1Val) - 1
+	//Stripe 1
+	if ss.TmpValsGpi[0] > 0.00001 { //that means there is activity here (i.e. - things were gated in) //this is to avoid if ignore changed the stripe, but it was not due to gating
+		if math.Abs(float64(ss.PFCmntD1Val[lastidx]-ss.PFCmntD1Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed
+			diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
+			diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
+			//will be storing into ss.StimStripe[0]
+
+			//want to store the current store type in there.
+			if strings.Contains(ss.TrainEnv.String(), "Store1") {
+				ss.StimStripe[0][0] = 1
+			}
+			if strings.Contains(ss.TrainEnv.String(), "Store2") {
+				ss.StimStripe[0][1] = 1
+			}
+			if diffinp > diffchunk { //gating in from chunk, so need more than just the current store type.
+				//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
+				diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
+				diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
+
+				if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
+					if ss.StimStripe[0][0] == 1 { //store1 is in D1, but its already stored in D1
+					}
+					if ss.StimStripe[0][1] == 1 { //store2 is in D1, but its already there
+					}
+
+				} else { //input was closer to D2
+					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and need it in D1
+						ss.StimStripe[0][0] = 1
+					}
+					if ss.StimStripe[1][1] == 1 { //store1 is in D2, and need it in D1
+						ss.StimStripe[0][1] = 1
+					}
+
+				}
+			}
+
+		}
+	}
+	//Stripe 2
+	if ss.TmpValsGpi[2] > 0.00001 { //that means there is activity here
+		if math.Abs(float64(ss.PFCmntD2Val[lastidx]-ss.PFCmntD2Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed
+			diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
+			diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
+			//will be storing into ss.StimStripe[1]
+
+			//want to store the current store type in there.
+			if strings.Contains(ss.TrainEnv.String(), "Store1") {
+				ss.StimStripe[1][0] = 1
+			}
+			if strings.Contains(ss.TrainEnv.String(), "Store2") {
+				ss.StimStripe[1][1] = 1
+			}
+			if diffinp > diffchunk { //gating in from chunk, so need more than just the current store type.
+				//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
+				diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
+				diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
+
+				if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
+					if ss.StimStripe[0][0] == 1 { //store1 is in D1, and need in D2
+						ss.StimStripe[1][0] = 1
+					}
+					if ss.StimStripe[0][1] == 1 { //store2 is in D1, and need in D2
+						ss.StimStripe[1][1] = 1
+					}
+
+				} else { //input was closer to D2
+					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and already in there
+					}
+					if ss.StimStripe[1][1] == 1 { //store1 is in D2, and already in there
+					}
+
+				}
+			}
+		}
+
+	}
+
+}
+
 // ApplyInputs applies input patterns from given environment.
 // It is good practice to have this be a separate method with appropriate
 // args so that it can be used for various different contexts
@@ -785,7 +919,86 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 			//fmt.Printf("InOneTsr is %v",ss.InOneTsr)
 		}
 		if lnm == "CtrlInput" {
-			ly.ApplyExt(pats) //no popcode
+
+			ly.ApplyExt(pats)                                       //no popcode
+			if pats.FloatVal1D(3) == 1 || pats.FloatVal1D(4) == 1 { //recall trial
+				//fmt.Printf("recall trial")
+				ly = ss.Net.LayerByName("StimLoc").(leabra.LeabraLayer).AsLeabra()
+				loc := make([]int, 2)
+				//do calculations to figure out which stripe it is in
+				if pats.FloatVal1D(3) == 1 { //Recall 1
+					stripe1 := false
+					stripe2 := false
+					if ss.StimStripe[0][0] == 1 {
+						stripe1 = true
+						loc[0] = 1
+
+					}
+					if ss.StimStripe[1][0] == 1 {
+						stripe2 = true
+						loc[1] = 1
+					}
+					if stripe1 == true && stripe2 == true {
+						stripe1items := ss.StimStripe[0][0] + ss.StimStripe[0][1]
+						stripe2items := ss.StimStripe[1][0] + ss.StimStripe[1][1]
+						if stripe1items < stripe2items {
+							loc[0] = 1
+							loc[1] = 0
+
+						} else if stripe1items >= stripe2items {
+							loc[0] = 0
+							loc[1] = 1
+						}
+
+					}
+
+				}
+
+				if pats.FloatVal1D(4) == 1 { //Recall 2
+					stripe1 := false
+					stripe2 := false
+					if ss.StimStripe[0][1] == 1 {
+						stripe1 = true
+						loc[0] = 1
+
+					}
+					if ss.StimStripe[1][1] == 1 {
+						stripe2 = true
+						loc[1] = 1
+					}
+					if stripe1 == true && stripe2 == true {
+						stripe1items := ss.StimStripe[0][0] + ss.StimStripe[0][1]
+						stripe2items := ss.StimStripe[1][0] + ss.StimStripe[1][1]
+						if stripe1items < stripe2items {
+							loc[0] = 1
+							loc[1] = 0
+							stripe2 = false
+
+						} else if stripe1items >= stripe2items {
+							loc[0] = 0
+							loc[1] = 1
+							stripe1 = false
+						}
+
+					}
+					if stripe1 == true { //clear out stripe 1
+						ss.StimStripe[0][0] = 0
+						ss.StimStripe[0][1] = 0
+					}
+					if stripe2 == true { //clear out stripe 2
+						ss.StimStripe[1][0] = 0
+						ss.StimStripe[1][1] = 0
+					}
+
+				}
+				loctsr := etensor.NewInt([]int{1, 2}, nil, nil)
+				for i := range loc {
+					loctsr.Values[i] = loc[i]
+				}
+
+				ly.ApplyExt(loctsr)
+
+			}
 
 		}
 		if lnm == "Output" {
@@ -914,6 +1127,20 @@ func (ss *Sim) TrainTrial() {
 	ss.ApplyInputs(&ss.TrainEnv)
 	ss.AlphaCyc(true)   // train
 	ss.TrialStats(true) // accumulate
+	ss.LogTrnTrl(ss.TrnTrlLog)
+	if ss.TrainEnv.CtrlInput.FloatVal1D(0) == 1 || ss.TrainEnv.CtrlInput.FloatVal1D(1) == 1 { //if it is a store trial
+		pc := popcode.Ring{}             //ring
+		pc.Defaults()                    //ring
+		pc.Min = ss.pop_min              //ring
+		pc.Max = ss.pop_max              //ring
+		pc.Sigma = float32(ss.pop_sigma) //ring
+		pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+		pfc.UnitVals(&ss.TmpValsPFC, "Act")
+		ss.PFCmntD1Val = append(ss.PFCmntD1Val, pc.Decode(ss.TmpValsPFC[0*ss.LayerSize:(0+1)*ss.LayerSize])) //record the current pfcmntD1
+		ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
+
+		ss.LocateItem(&ss.TrainEnv) //record the location of where the current store got saved.
+	}
 }
 
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
@@ -1147,6 +1374,19 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	if ss.LesionApplied == "yes" {
 		ss.UnLesionNet(ss.Net)
 		ss.LesionApplied = "no"
+	}
+	if ss.TestEnv.CtrlInput.FloatVal1D(0) == 1 || ss.TestEnv.CtrlInput.FloatVal1D(1) == 1 { //if it is a store trial
+		pc := popcode.Ring{}             //ring
+		pc.Defaults()                    //ring
+		pc.Min = ss.pop_min              //ring
+		pc.Max = ss.pop_max              //ring
+		pc.Sigma = float32(ss.pop_sigma) //ring
+		pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+		pfc.UnitVals(&ss.TmpValsPFC, "Act")
+		ss.PFCmntD1Val = append(ss.PFCmntD1Val, pc.Decode(ss.TmpValsPFC[0*ss.LayerSize:(0+1)*ss.LayerSize])) //record the current pfcmntD1
+		ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
+
+		ss.LocateItem(&ss.TestEnv) //record the location of where the current store got saved.
 	}
 }
 
@@ -1414,6 +1654,162 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("RewPred", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("PerTrlMSec", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 
+	return plt
+}
+
+//////////////////////////////////////////////
+//  TrnTrlLog
+
+// LogTrnTrl adds data from current trial to the TrnTrlLog table.
+// log always contains number of testing items
+func (ss *Sim) LogTrnTrl(dt *etable.Table) {
+	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
+
+	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
+	inp := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
+	chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
+	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+
+	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
+	//pc.Defaults() //no ring
+	//pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two //no ring
+
+	pc := popcode.Ring{}             //ring
+	pc.Defaults()                    //ring
+	pc.Min = ss.pop_min              //ring
+	pc.Max = ss.pop_max              //ring
+	pc.Sigma = float32(ss.pop_sigma) //ring
+
+	trl := ss.TrainEnv.Trial.Cur
+	row := trl
+
+	if dt.Rows <= row {
+		dt.SetNumRows(row + 1)
+	}
+
+	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
+	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("Trial", row, float64(trl))
+	dt.SetCellString("TrialName", row, ss.TrainEnv.String())
+	dt.SetCellFloat("Err", row, ss.TrlErr)
+	dt.SetCellFloat("TrlDecodedDiff", row, ss.TrlDecodedDiff)
+	dt.SetCellFloat("SSE", row, ss.TrlSSE)
+	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
+	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
+	dt.SetCellFloat("DA", row, ss.TrlDA)
+	dt.SetCellFloat("AbsDA", row, ss.TrlAbsDA)
+	dt.SetCellFloat("RewPred", row, ss.TrlRewPred)
+
+	for _, lnm := range ss.TrnRecLays {
+		tsr := ss.ValsTsr(lnm)
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
+		ly.UnitValsTensor(tsr, "ActM")
+		dt.SetCellTensor(lnm, row, tsr)
+	}
+
+	out.UnitVals(&ss.TmpVals, "ActM")
+	outdecode := pc.Decode(ss.TmpVals)
+	dt.SetCellFloat("OutDecode", row, float64(outdecode))
+
+	out.UnitVals(&ss.TmpVals2, "Targ")   //writes Act value from the layer
+	outdecode2 := pc.Decode(ss.TmpVals2) //this decodes the slide into a single float32
+	dt.SetCellFloat("OutTarget", row, float64(outdecode2))
+
+	inp.UnitVals(&ss.TmpValsInp, "Act")
+	indecode := pc.Decode(ss.TmpValsInp)
+	dt.SetCellFloat("InDecode", row, float64(indecode))
+
+	chunk.UnitVals(&ss.TmpValsCh, "Act")
+	chdecode := pc.Decode(ss.TmpValsCh)
+	dt.SetCellFloat("ChunkDecode", row, float64(chdecode))
+
+	pfc.UnitVals(&ss.TmpValsPFC, "Act")
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		pfcdecode := pc.Decode(ss.TmpValsPFC[stripe*ss.LayerSize : (stripe+1)*ss.LayerSize])
+		stnm := "stripe" + string(stripe)
+		dt.SetCellFloat(stnm, row, float64(pfcdecode))
+	}
+
+	dt.SetCellString("Lesion", row, ss.Lesion)
+	dt.SetCellFloat("LesionProp", row, ss.LesionProp)
+	dt.SetCellString("LesionApplied", row, ss.LesionApplied)
+
+	// note: essential to use Go version of update when called from another goroutine
+	ss.TrnTrlPlot.GoUpdate()
+
+	if ss.TrnTrlFile != nil {
+		if ss.TrainEnv.Trial.Cur == 0 {
+			dt.WriteCSVHeaders(ss.TrnTrlFile, etable.Tab)
+		}
+		dt.WriteCSVRow(ss.TrnTrlFile, row, etable.Tab)
+	}
+}
+
+func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
+	dt.SetMetaData("name", "TrnTrlLog")
+	dt.SetMetaData("desc", "Record of testing per input pattern")
+	dt.SetMetaData("read-only", "true")
+	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
+
+	nt := ss.TrainEnv.Trial.Max
+	sch := etable.Schema{
+		{"Run", etensor.INT64, nil, nil},
+		{"Epoch", etensor.INT64, nil, nil},
+		{"Trial", etensor.INT64, nil, nil},
+		{"TrialName", etensor.STRING, nil, nil},
+		{"Err", etensor.FLOAT64, nil, nil},
+		{"TrlDecodedDiff", etensor.FLOAT64, nil, nil},
+		{"SSE", etensor.FLOAT64, nil, nil},
+		{"AvgSSE", etensor.FLOAT64, nil, nil},
+		{"CosDiff", etensor.FLOAT64, nil, nil},
+		{"DA", etensor.FLOAT64, nil, nil},
+		{"AbsDA", etensor.FLOAT64, nil, nil},
+		{"RewPred", etensor.FLOAT64, nil, nil},
+	}
+	for _, lnm := range ss.TrnRecLays {
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
+		sch = append(sch, etable.Column{lnm, etensor.FLOAT64, ly.Shp.Shp, nil})
+	}
+
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		stnm := "stripe" + string(stripe)
+		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
+	}
+
+	sch = append(sch, etable.Schema{
+
+		{"OutDecode", etensor.FLOAT64, nil, nil},    //adds outdecode value to table
+		{"OutTarget", etensor.FLOAT64, nil, nil},    //adds target value to table
+		{"InDecode", etensor.FLOAT64, nil, nil},     //adds input value to table
+		{"ChunkDecode", etensor.FLOAT64, nil, nil},  //adds chunk value to table
+		{"Lesion", etensor.STRING, nil, nil},        //adds lesion type
+		{"LesionProp", etensor.FLOAT64, nil, nil},   //adds prop of trials with lesion
+		{"LesionApplied", etensor.STRING, nil, nil}, //add if lesion was actually applied in that test trial
+	}...)
+	dt.SetFromSchema(sch, nt)
+}
+
+func (ss *Sim) ConfigTrnTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+	plt.Params.Title = "SIR Test Trial Plot"
+	plt.Params.XAxisCol = "Trial"
+	plt.SetTable(dt)
+	// order of params: on, fixMin, min, fixMax, max
+	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Trial", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
+	plt.SetColParams("TrlDecodedDiff", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("DA", eplot.On, eplot.FixMin, -1, eplot.FixMax, 1)
+	plt.SetColParams("AbsDA", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("RewPred", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+
+	for _, lnm := range ss.TrnRecLays {
+		plt.SetColParams(lnm, eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	}
 	return plt
 }
 
@@ -1757,6 +2153,9 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstTrlPlot").(*eplot.Plot2D)
 	ss.TstTrlPlot = ss.ConfigTstTrlPlot(plt, ss.TstTrlLog)
+
+	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TrnTrlPlot").(*eplot.Plot2D)
+	ss.TrnTrlPlot = ss.ConfigTrnTrlPlot(plt, ss.TstTrlLog)
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstEpcPlot").(*eplot.Plot2D)
 	ss.TstEpcPlot = ss.ConfigTstEpcPlot(plt, ss.TstEpcLog)
