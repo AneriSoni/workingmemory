@@ -1888,9 +1888,11 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.TrainEnv.StimDist, "TrainStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for train")
 	flag.StringVar(&ss.TestEnv.StimDist, "TestStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for test")
 	flag.StringVar(&ss.RewardFunction, "RewardFunction", "unitdifference", "reward function either unitdifference or decoded")
+	flag.StringVar(&ss.RewardType, "RewardType", "", "reward function either continuous or based on threshold")
 	flag.StringVar(&ss.RunLocation, "RunLocation", "cluster", "location where code is being run so that files can be saved in correct place")
 	flag.Parse()
 	ss.Init()
+	fmt.Printf("RewardType: %s\n", ss.RewardType)
 
 	if note != "" {
 		fmt.Printf("note: %s\n", note)
