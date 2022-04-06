@@ -311,6 +311,8 @@ type Sim struct {
 	RewardType     string  `desc: "type of reward function - either cont or based on threshold"`
 
 	StimStripe [][]float64 `desc: "tells which stimulus is stored in which stripe"`
+	SirTask    int         `desc: "tells which task type it is"`
+	Acts       int         `desc: "tells  how many possible actions, helps build layers"`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -500,10 +502,21 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.LayerSize = 20
 	ss.Stripes = 2
+	ss.SirTask = 2
 
 	ss.StimStripe = make([][]float64, ss.Stripes)
 	for i := range ss.StimStripe {
-		ss.StimStripe[i] = make([]float64, 2) //this is sir2 so 2 store types.
+		//if len(ss.TrainEnv.CtrlInput.Values) == 5 {
+		if ss.SirTask == 2 {
+			ss.StimStripe[i] = make([]float64, 2) //this is sir2 so 2 store types
+			ss.Acts = 5
+		}
+
+		//if len(ss.TrainEnv.CtrlInput.Values) == 7 {
+		if ss.SirTask == 3 {
+			ss.StimStripe[i] = make([]float64, 3) //this is sir3 so 3 store typess
+			ss.Acts = 7
+		}
 	}
 
 }
@@ -515,7 +528,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	snc.SetName("SNc")
 
 	inp := net.AddLayer2D("Input", 1, ss.LayerSize, emer.Input)
-	ctrl := net.AddLayer2D("CtrlInput", 1, 5, emer.Input)
+	ctrl := net.AddLayer2D("CtrlInput", 1, ss.Acts, emer.Input)
 	out := net.AddLayer2D("Output", 1, ss.LayerSize, emer.Target)
 	hid := net.AddLayer2D("Hidden", ss.LayerSize, ss.LayerSize, emer.Hidden)
 	chunk := net.AddLayer2D("Chunk", 1, ss.LayerSize, emer.Hidden)
@@ -531,7 +544,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
 	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, ss.LayerSize)
 	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 8, 1, 1, 1, 5, 1, ss.LayerSize)
-	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", ss.Stripes, 1, 1, 1, 5, 1, ss.LayerSize)
+	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", ss.Stripes, 1, 1, 1, ss.Acts, 1, ss.LayerSize)
 	_ = gpe
 	_ = gpi
 	_ = pfcMnt
@@ -780,6 +793,7 @@ func (ss *Sim) LocateItem(en env.Env) {
 	InpVal := pc.Decode(ss.TmpValsInp)
 	lastidx := len(ss.PFCmntD1Val) - 1
 	//Stripe 1
+
 	if ss.TmpValsGpi[0] > 0.00001 { //that means there is activity here (i.e. - things were gated in) //this is to avoid if ignore changed the stripe, but it was not due to gating
 		if math.Abs(float64(ss.PFCmntD1Val[lastidx]-ss.PFCmntD1Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed
 			diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
@@ -793,6 +807,9 @@ func (ss *Sim) LocateItem(en env.Env) {
 			if strings.Contains(ss.TrainEnv.String(), "Store2") {
 				ss.StimStripe[0][1] = 1
 			}
+			if strings.Contains(ss.TrainEnv.String(), "Store3") {
+				ss.StimStripe[0][2] = 1
+			}
 			if diffinp > diffchunk { //gating in from chunk, so need more than just the current store type.
 				//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
 				diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
@@ -803,6 +820,10 @@ func (ss *Sim) LocateItem(en env.Env) {
 					}
 					if ss.StimStripe[0][1] == 1 { //store2 is in D1, but its already there
 					}
+					if ss.SirTask == 3 {
+						if ss.StimStripe[0][2] == 1 { //store3 is in D1, but its already there
+						}
+					}
 
 				} else { //input was closer to D2
 					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and need it in D1
@@ -810,6 +831,11 @@ func (ss *Sim) LocateItem(en env.Env) {
 					}
 					if ss.StimStripe[1][1] == 1 { //store1 is in D2, and need it in D1
 						ss.StimStripe[0][1] = 1
+					}
+					if ss.SirTask == 3 {
+						if ss.StimStripe[1][2] == 1 { //store3 is in D2, and need it in D1
+							ss.StimStripe[0][2] = 1
+						}
 					}
 
 				}
@@ -831,6 +857,9 @@ func (ss *Sim) LocateItem(en env.Env) {
 			if strings.Contains(ss.TrainEnv.String(), "Store2") {
 				ss.StimStripe[1][1] = 1
 			}
+			if strings.Contains(ss.TrainEnv.String(), "Store3") {
+				ss.StimStripe[0][2] = 1
+			}
 			if diffinp > diffchunk { //gating in from chunk, so need more than just the current store type.
 				//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
 				diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
@@ -843,11 +872,20 @@ func (ss *Sim) LocateItem(en env.Env) {
 					if ss.StimStripe[0][1] == 1 { //store2 is in D1, and need in D2
 						ss.StimStripe[1][1] = 1
 					}
+					if ss.SirTask == 3 {
+						if ss.StimStripe[0][2] == 1 { //store3 is in D1, and need in D2
+							ss.StimStripe[1][2] = 1
+						}
+					}
 
 				} else { //input was closer to D2
 					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and already in there
 					}
 					if ss.StimStripe[1][1] == 1 { //store1 is in D2, and already in there
+					}
+					if ss.SirTask == 3 {
+						if ss.StimStripe[1][2] == 1 { //store3 is in D2, but its already there
+						}
 					}
 
 				}
@@ -862,6 +900,14 @@ func (ss *Sim) LocateItem(en env.Env) {
 // It is good practice to have this be a separate method with appropriate
 // args so that it can be used for various different contexts
 // (training, testing, etc).
+
+func sumx(x []float64) float64 {
+	totalx := 0.0
+	for _, valuex := range x {
+		totalx += valuex
+	}
+	return totalx
+}
 func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
@@ -919,16 +965,23 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 			//fmt.Printf("InOneTsr is %v",ss.InOneTsr)
 		}
 		if lnm == "CtrlInput" {
-
-			ly.ApplyExt(pats)                                       //no popcode
-			if pats.FloatVal1D(3) == 1 || pats.FloatVal1D(4) == 1 { //recall trial
+			ly.ApplyExt(pats) //no popcode
+			//if pats.FloatVal1D(3) == 1 || pats.FloatVal1D(4) == 1 { //recall trial
+			tr := "notrial"
+			if strings.Contains(en.Name(), "Train") {
+				tr = ss.TrainEnv.String()
+			} else if strings.Contains(en.Name(), "Test") {
+				tr = ss.TestEnv.String()
+			}
+			if strings.Contains(tr, "Recall") { //recall trial
 				//fmt.Printf("recall trial")
 				ly = ss.Net.LayerByName("StimLoc").(leabra.LeabraLayer).AsLeabra()
 				loc := make([]int, 2)
+				stripe1 := false
+				stripe2 := false
 				//do calculations to figure out which stripe it is in
-				if pats.FloatVal1D(3) == 1 { //Recall 1
-					stripe1 := false
-					stripe2 := false
+				//if pats.FloatVal1D(3) == 1 { //Recall 1
+				if strings.Contains(tr, "Recall1") { //Recall 1
 					if ss.StimStripe[0][0] == 1 {
 						stripe1 = true
 						loc[0] = 1
@@ -939,8 +992,10 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 						loc[1] = 1
 					}
 					if stripe1 == true && stripe2 == true {
-						stripe1items := ss.StimStripe[0][0] + ss.StimStripe[0][1]
-						stripe2items := ss.StimStripe[1][0] + ss.StimStripe[1][1]
+						//need to add ss.StimStripe[0][2] and ss.StimStripe[1][2] into addition
+
+						stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
+						stripe2items := sumx(ss.StimStripe[1]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
 						if stripe1items < stripe2items {
 							loc[0] = 1
 							loc[1] = 0
@@ -954,9 +1009,8 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 
 				}
 
-				if pats.FloatVal1D(4) == 1 { //Recall 2
-					stripe1 := false
-					stripe2 := false
+				//if pats.FloatVal1D(4) == 1 { //Recall 2
+				if strings.Contains(tr, "Recall2") {
 					if ss.StimStripe[0][1] == 1 {
 						stripe1 = true
 						loc[0] = 1
@@ -967,8 +1021,8 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 						loc[1] = 1
 					}
 					if stripe1 == true && stripe2 == true {
-						stripe1items := ss.StimStripe[0][0] + ss.StimStripe[0][1]
-						stripe2items := ss.StimStripe[1][0] + ss.StimStripe[1][1]
+						stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
+						stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
 						if stripe1items < stripe2items {
 							loc[0] = 1
 							loc[1] = 0
@@ -981,20 +1035,51 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 						}
 
 					}
-					if stripe1 == true { //clear out stripe 1
-						ss.StimStripe[0][0] = 0
-						ss.StimStripe[0][1] = 0
-					}
-					if stripe2 == true { //clear out stripe 2
-						ss.StimStripe[1][0] = 0
-						ss.StimStripe[1][1] = 0
-					}
-
 				}
+				if strings.Contains(tr, "Recall3") {
+					stripe1 := false
+					stripe2 := false
+					if ss.StimStripe[0][2] == 1 {
+						stripe1 = true
+						loc[0] = 1
+
+					}
+					if ss.StimStripe[1][2] == 1 {
+						stripe2 = true
+						loc[1] = 1
+					}
+					if stripe1 == true && stripe2 == true {
+						stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
+						stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
+						if stripe1items < stripe2items {
+							loc[0] = 1
+							loc[1] = 0
+							stripe2 = false
+
+						} else if stripe1items >= stripe2items {
+							loc[0] = 0
+							loc[1] = 1
+							stripe1 = false
+						}
+
+					}
+				}
+				if stripe1 == true { //clear out stripe 1
+					ss.StimStripe[0][0] = 0
+					ss.StimStripe[0][1] = 0
+				}
+				if stripe2 == true { //clear out stripe 2
+					ss.StimStripe[1][0] = 0
+					ss.StimStripe[1][1] = 0
+				}
+
 				loctsr := etensor.NewInt([]int{1, 2}, nil, nil)
+				//fmt.Printf("loctsr, %v", loctsr)
 				for i := range loc {
 					loctsr.Values[i] = loc[i]
 				}
+				//fmt.Printf("loc: %v", loc)
+				//fmt.Printf("loctsr after, %v", loctsr)
 
 				ly.ApplyExt(loctsr)
 
@@ -1140,6 +1225,7 @@ func (ss *Sim) TrainTrial() {
 		ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
 
 		ss.LocateItem(&ss.TrainEnv) //record the location of where the current store got saved.
+		fmt.Printf("0")
 	}
 }
 
