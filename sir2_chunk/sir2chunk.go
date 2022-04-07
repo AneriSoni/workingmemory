@@ -794,103 +794,103 @@ func (ss *Sim) LocateItem(en env.Env) {
 	lastidx := len(ss.PFCmntD1Val) - 1
 	//Stripe 1
 
-	if ss.TmpValsGpi[0] > 0.00001 { //that means there is activity here (i.e. - things were gated in) //this is to avoid if ignore changed the stripe, but it was not due to gating
-		if math.Abs(float64(ss.PFCmntD1Val[lastidx]-ss.PFCmntD1Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed
-			diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
-			diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
-			//will be storing into ss.StimStripe[0]
+	if ss.TmpValsGpi[0] > 0.01 { //that means there is activity here (i.e. - things were gated in) //this is to avoid if ignore changed the stripe, but it was not due to gating
+		//if math.Abs(float64(ss.PFCmntD1Val[lastidx]-ss.PFCmntD1Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed, but this can only be done if not first trial; not sure if nec.
+		diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
+		diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
+		//will be storing into ss.StimStripe[0]
 
-			//want to store the current store type in there.
-			if strings.Contains(ss.TrainEnv.String(), "Store1") {
-				ss.StimStripe[0][0] = 1
-			}
-			if strings.Contains(ss.TrainEnv.String(), "Store2") {
-				ss.StimStripe[0][1] = 1
-			}
-			if strings.Contains(ss.TrainEnv.String(), "Store3") {
-				ss.StimStripe[0][2] = 1
-			}
-			if diffinp > diffchunk { //gating in from chunk, so need more than just the current store type.
-				//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
-				diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
-				diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
-
-				if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
-					if ss.StimStripe[0][0] == 1 { //store1 is in D1, but its already stored in D1
-					}
-					if ss.StimStripe[0][1] == 1 { //store2 is in D1, but its already there
-					}
-					if ss.SirTask == 3 {
-						if ss.StimStripe[0][2] == 1 { //store3 is in D1, but its already there
-						}
-					}
-
-				} else { //input was closer to D2
-					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and need it in D1
-						ss.StimStripe[0][0] = 1
-					}
-					if ss.StimStripe[1][1] == 1 { //store1 is in D2, and need it in D1
-						ss.StimStripe[0][1] = 1
-					}
-					if ss.SirTask == 3 {
-						if ss.StimStripe[1][2] == 1 { //store3 is in D2, and need it in D1
-							ss.StimStripe[0][2] = 1
-						}
-					}
-
-				}
-			}
-
+		//want to store the current store type in there.
+		if strings.Contains(ss.TrainEnv.String(), "Store1") {
+			ss.StimStripe[0][0] = 1
 		}
+		if strings.Contains(ss.TrainEnv.String(), "Store2") {
+			ss.StimStripe[0][1] = 1
+		}
+		if strings.Contains(ss.TrainEnv.String(), "Store3") {
+			ss.StimStripe[0][2] = 1
+		}
+		if diffinp > diffchunk && len(ss.PFCmntD1Val) > 1 { //gating in from chunk, so need more than just the current store type. only makes sense if after first trial, else nothing else to chunk in
+			//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
+			diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
+			diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
+
+			if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
+				if ss.StimStripe[0][0] == 1 { //store1 is in D1, but its already stored in D1
+				}
+				if ss.StimStripe[0][1] == 1 { //store2 is in D1, but its already there
+				}
+				if ss.SirTask == 3 {
+					if ss.StimStripe[0][2] == 1 { //store3 is in D1, but its already there
+					}
+				}
+
+			} else { //input was closer to D2
+				if ss.StimStripe[1][0] == 1 { //store1 is in D2, and need it in D1
+					ss.StimStripe[0][0] = 1
+				}
+				if ss.StimStripe[1][1] == 1 { //store1 is in D2, and need it in D1
+					ss.StimStripe[0][1] = 1
+				}
+				if ss.SirTask == 3 {
+					if ss.StimStripe[1][2] == 1 { //store3 is in D2, and need it in D1
+						ss.StimStripe[0][2] = 1
+					}
+				}
+
+			}
+		}
+
+		//}
 	}
 	//Stripe 2
-	if ss.TmpValsGpi[2] > 0.00001 { //that means there is activity here
-		if math.Abs(float64(ss.PFCmntD2Val[lastidx]-ss.PFCmntD2Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed
-			diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
-			diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
-			//will be storing into ss.StimStripe[1]
+	if ss.TmpValsGpi[2] > 0.01 { //that means there is activity here
+		//if math.Abs(float64(ss.PFCmntD2Val[lastidx]-ss.PFCmntD2Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed, not sure if this is nec.
+		diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
+		diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
+		//will be storing into ss.StimStripe[1]
 
-			//want to store the current store type in there.
-			if strings.Contains(ss.TrainEnv.String(), "Store1") {
-				ss.StimStripe[1][0] = 1
-			}
-			if strings.Contains(ss.TrainEnv.String(), "Store2") {
-				ss.StimStripe[1][1] = 1
-			}
-			if strings.Contains(ss.TrainEnv.String(), "Store3") {
-				ss.StimStripe[0][2] = 1
-			}
-			if diffinp > diffchunk { //gating in from chunk, so need more than just the current store type.
-				//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
-				diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
-				diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
+		//want to store the current store type in there.
+		if strings.Contains(ss.TrainEnv.String(), "Store1") {
+			ss.StimStripe[1][0] = 1
+		}
+		if strings.Contains(ss.TrainEnv.String(), "Store2") {
+			ss.StimStripe[1][1] = 1
+		}
+		if strings.Contains(ss.TrainEnv.String(), "Store3") {
+			ss.StimStripe[0][2] = 1
+		}
+		if diffinp > diffchunk && len(ss.PFCmntD1Val) > 1 { //gating in from chunk, so need more than just the current store type.
+			//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
+			diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
+			diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
 
-				if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
-					if ss.StimStripe[0][0] == 1 { //store1 is in D1, and need in D2
-						ss.StimStripe[1][0] = 1
-					}
-					if ss.StimStripe[0][1] == 1 { //store2 is in D1, and need in D2
-						ss.StimStripe[1][1] = 1
-					}
-					if ss.SirTask == 3 {
-						if ss.StimStripe[0][2] == 1 { //store3 is in D1, and need in D2
-							ss.StimStripe[1][2] = 1
-						}
-					}
-
-				} else { //input was closer to D2
-					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and already in there
-					}
-					if ss.StimStripe[1][1] == 1 { //store1 is in D2, and already in there
-					}
-					if ss.SirTask == 3 {
-						if ss.StimStripe[1][2] == 1 { //store3 is in D2, but its already there
-						}
-					}
-
+			if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
+				if ss.StimStripe[0][0] == 1 { //store1 is in D1, and need in D2
+					ss.StimStripe[1][0] = 1
 				}
+				if ss.StimStripe[0][1] == 1 { //store2 is in D1, and need in D2
+					ss.StimStripe[1][1] = 1
+				}
+				if ss.SirTask == 3 {
+					if ss.StimStripe[0][2] == 1 { //store3 is in D1, and need in D2
+						ss.StimStripe[1][2] = 1
+					}
+				}
+
+			} else { //input was closer to D2
+				if ss.StimStripe[1][0] == 1 { //store1 is in D2, and already in there
+				}
+				if ss.StimStripe[1][1] == 1 { //store1 is in D2, and already in there
+				}
+				if ss.SirTask == 3 {
+					if ss.StimStripe[1][2] == 1 { //store3 is in D2, but its already there
+					}
+				}
+
 			}
 		}
+		//}
 
 	}
 
@@ -1123,9 +1123,14 @@ func (ss *Sim) ApplyReward(train bool) {
 	} else {
 		en = &ss.TestEnv
 	}
-	if en.Act != Recall1 && en.Act != Recall2 { // only reward on recall trials!
-		return
+	if strings.Contains(en.String(), "Recall") { //this should cover all recall trials
+	} else {
+		return //only reward on recall trials.
 	}
+	//if en.Act != Recall1 && en.Act != Recall2 { // only reward on recall trials!
+	//	return
+	//}
+
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 
 	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
@@ -1225,7 +1230,6 @@ func (ss *Sim) TrainTrial() {
 		ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
 
 		ss.LocateItem(&ss.TrainEnv) //record the location of where the current store got saved.
-		fmt.Printf("0")
 	}
 }
 
@@ -1347,11 +1351,21 @@ func (ss *Sim) TrainRun() {
 	var err error
 	//fnm := ss.LogFileName("epc")
 	fnm := ""
-	if ss.RunLocation == "home" {
-		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-	} else if ss.RunLocation == "cluster" {
+	if ss.SirTask == 2 {
+		if ss.RunLocation == "home" {
+			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		} else if ss.RunLocation == "cluster" {
 
-		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		}
+	}
+	if ss.SirTask == 3 {
+		if ss.RunLocation == "home" {
+			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		} else if ss.RunLocation == "cluster" {
+
+			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+		}
 	}
 	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 	ss.TrnEpcFile, err = os.Create(fnm)
@@ -1497,11 +1511,21 @@ func (ss *Sim) RunTestAll() {
 
 	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 	fnm := ""
-	if ss.RunLocation == "home" {
-		fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
-	} else if ss.RunLocation == "cluster" {
+	if ss.SirTask == 2 {
+		if ss.RunLocation == "home" {
+			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+		} else if ss.RunLocation == "cluster" {
 
-		fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+		}
+	}
+	if ss.SirTask == 3 {
+		if ss.RunLocation == "home" {
+			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+		} else if ss.RunLocation == "cluster" {
+
+			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+		}
 	}
 	ss.TstTrlFile, err = os.Create(fnm)
 
@@ -2553,11 +2577,21 @@ func (ss *Sim) CmdArgs() {
 		var err error
 		//fnm := ss.LogFileName("epc")
 		fnm := ""
-		if ss.RunLocation == "home" {
-			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-		} else if ss.RunLocation == "cluster" {
+		if ss.SirTask == 2 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			} else if ss.RunLocation == "cluster" {
 
-			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			}
+		}
+		if ss.SirTask == 3 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			} else if ss.RunLocation == "cluster" {
+
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			}
 		}
 		ss.TrnEpcFile, err = os.Create(fnm)
 		if err != nil {
