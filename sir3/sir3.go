@@ -734,7 +734,7 @@ func (ss *Sim) ApplyReward(train bool) {
 	} else {
 		en = &ss.TestEnv
 	}
-	if en.Act != Recall1 && en.Act != Recall2 { // only reward on recall trials!
+	if en.Act != Recall1 && en.Act != Recall2 && en.Act != Recall3 { // only reward on recall trials!
 		return
 	}
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
