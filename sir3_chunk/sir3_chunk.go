@@ -1219,6 +1219,10 @@ func (ss *Sim) TrainTrial() {
 		ss.NewRun()
 	}
 
+	if ss.Lesion == "StimLoc" {
+		ss.Net.LayerByName("Hidden").SetOff(true)
+	}
+
 	ss.TrainEnv.Step() // the Env encapsulates and manages all counter state
 
 	// Key to query counters FIRST because current state is in NEXT epoch
@@ -1501,8 +1505,12 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 				ss.Net.LayerByName("PFCoutD").SetOff(true)
 				ss.Net.LayerByName("Hidden").SetOff(true)
 			}
+
 		}
 
+	}
+	if ss.Lesion == "StimLoc" {
+		ss.Net.LayerByName("Hidden").SetOff(true)
 	}
 
 	ss.TestEnv.Step()
@@ -2580,6 +2588,7 @@ func (ss *Sim) CmdArgs() {
 	flag.Parse()
 	ss.Init()
 
+	fmt.Printf("lesion: %s", ss.Lesion)
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
 	if note != "" {
 		fmt.Printf("note: %s\n", note)
