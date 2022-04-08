@@ -313,6 +313,7 @@ type Sim struct {
 	StimStripe [][]float64 `desc: "tells which stimulus is stored in which stripe"`
 	SirTask    int         `desc: "tells which task type it is"`
 	Acts       int         `desc: "tells  how many possible actions, helps build layers"`
+	chunklay   bool        `desc: "tells if there will be chunk or not. "`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -401,7 +402,11 @@ func (ss *Sim) New() {
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle //leabra.AlphaCycle
 	ss.TestUpdt = leabra.AlphaCycle
-	ss.TstRecLays = []string{"Input", "Output", "Chunk", "GPiThal", "PFCmntD", "PFCoutD"}
+	if ss.chunklay == true {
+		ss.TstRecLays = []string{"Input", "Output", "Chunk", "GPiThal", "PFCmntD", "PFCoutD"}
+	} else {
+		ss.TstRecLays = []string{"Input", "Output", "GPiThal", "PFCmntD", "PFCoutD"}
+	}
 	ss.TrnRecLays = []string{"PFCmntD"}
 	ss.Defaults()
 }
@@ -503,6 +508,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LayerSize = 20
 	ss.Stripes = 2
 	ss.SirTask = 2
+	ss.chunklay = true
 
 	ss.StimStripe = make([][]float64, ss.Stripes)
 	for i := range ss.StimStripe {
@@ -531,14 +537,15 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	ctrl := net.AddLayer2D("CtrlInput", 1, ss.Acts, emer.Input)
 	out := net.AddLayer2D("Output", 1, ss.LayerSize, emer.Target)
 	hid := net.AddLayer2D("Hidden", ss.LayerSize, ss.LayerSize, emer.Hidden)
-	chunk := net.AddLayer2D("Chunk", 1, ss.LayerSize, emer.Hidden)
+	//chunk := net.AddLayer2D("Chunk", 1, ss.LayerSize, emer.Hidden)
+	//chunk.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Hidden", XAlign: relpos.Left, Space: 3})
+
 	stimloc := net.AddLayer2D("StimLoc", 1, ss.Stripes, emer.Input)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	//out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	out.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	ctrl.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", XAlign: relpos.Left, Space: 2})
 	hid.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "CtrlInput", XAlign: relpos.Left, Space: 2})
-	chunk.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Hidden", XAlign: relpos.Left, Space: 3})
 	stimloc.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "CtrlInput", YAlign: relpos.Front, Space: 1})
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
@@ -617,13 +624,17 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("FmPFCOutD")
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
-	pj = net.ConnectLayers(inp, chunk, fmin, emer.Forward)
-	pj = net.ConnectLayers(pfcMntD, chunk, fmin2, emer.Forward) //original model
-	//pj = net.ConnectLayers(pfcMntD, chunk, fminbot, emer.Forward) //hybrid model, connect to only 1 pfc layer
-	pj.SetClass("PFCMntDChunk")
-	pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
-	//pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
-	pj.SetClass("PFCFixedChunk")
+	if ss.chunklay == true {
+		chunk := net.AddLayer2D("Chunk", 1, ss.LayerSize, emer.Hidden)
+		chunk.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Hidden", XAlign: relpos.Left, Space: 3})
+		pj = net.ConnectLayers(inp, chunk, fmin, emer.Forward)
+		pj = net.ConnectLayers(pfcMntD, chunk, fmin2, emer.Forward) //original model
+		//pj = net.ConnectLayers(pfcMntD, chunk, fminbot, emer.Forward) //hybrid model, connect to only 1 pfc layer
+		pj.SetClass("PFCMntDChunk")
+		pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
+		//pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
+		pj.SetClass("PFCFixedChunk")
+	}
 
 	snc.SendDA.AddAllBut(net, nil) // send dopamine to all layers..
 
@@ -661,19 +672,17 @@ func (ss *Sim) NewRndSeed() {
 // and add a few tabs at the end to allow for expansion..
 func (ss *Sim) Counters(train bool) string {
 	//train is a true/false to mark if trial is a train or test trial
+
 	//can add the decoded value of chunk and 2 pfc stripes here. (so that we can compare with the input)
+	//not sure what this is for over here.
 	pc := popcode.Ring{}             //ring
 	pc.Defaults()                    //ring
 	pc.Min = ss.pop_min              //ring
 	pc.Max = ss.pop_max              //ring
 	pc.Sigma = float32(ss.pop_sigma) //ring
 
-	chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
 	pfcmntD := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 	pfcmnt := ss.Net.LayerByName("PFCmnt").(leabra.LeabraLayer).AsLeabra()
-
-	chunk.UnitVals(&ss.TmpValsCh, "Act")
-	chdecode := pc.Decode(ss.TmpValsCh)
 
 	pfcmntD.UnitVals(&ss.TmpValsPFC, "Act")
 	pfcmntD1 := pc.Decode(ss.TmpValsPFC[0*ss.LayerSize : (0+1)*ss.LayerSize])
@@ -683,11 +692,26 @@ func (ss *Sim) Counters(train bool) string {
 	pfcmnt1 := pc.Decode(ss.TmpValsPFC[0*ss.LayerSize : (0+1)*ss.LayerSize])
 	pfcmnt2 := pc.Decode(ss.TmpValsPFC[1*ss.LayerSize : (1+1)*ss.LayerSize])
 
-	if train {
-		//syntax for this is "title" \t%d(or%s)\t
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\nChunk:\t%v\tPFCmnt1:\t%v\tPFCmnt2:\t%v\tPFCmntD1:\t%v\tPFCmntD2:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String(), chdecode, pfcmnt1, pfcmnt2, pfcmntD1, pfcmntD2)
+	if ss.chunklay == true {
+
+		chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
+		chunk.UnitVals(&ss.TmpValsCh, "Act")
+		chdecode := pc.Decode(ss.TmpValsCh)
+
+		if train {
+			//syntax for this is "title" \t%d(or%s)\t
+			return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\nChunk:\t%v\tPFCmnt1:\t%v\tPFCmnt2:\t%v\tPFCmntD1:\t%v\tPFCmntD2:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String(), chdecode, pfcmnt1, pfcmnt2, pfcmntD1, pfcmntD2)
+		} else {
+			return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\nChunk:\t%v\tPFCmnt1:\t%v\tPFCmnt2:\t%v\tPFCmntD1:\t%v\tPFCmntD2:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String(), chdecode, pfcmnt1, pfcmnt2, pfcmntD1, pfcmntD2)
+		}
 	} else {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\nChunk:\t%v\tPFCmnt1:\t%v\tPFCmnt2:\t%v\tPFCmntD1:\t%v\tPFCmntD2:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String(), chdecode, pfcmnt1, pfcmnt2, pfcmntD1, pfcmntD2)
+		if train {
+			//syntax for this is "title" \t%d(or%s)\t
+			return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\nPFCmnt1:\t%v\tPFCmnt2:\t%v\tPFCmntD1:\t%v\tPFCmntD2:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String(), pfcmnt1, pfcmnt2, pfcmntD1, pfcmntD2)
+		} else {
+			return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\nPFCmnt1:\t%v\tPFCmnt2:\t%v\tPFCmntD1:\t%v\tPFCmntD2:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String(), pfcmnt1, pfcmnt2, pfcmntD1, pfcmntD2)
+		}
+
 	}
 }
 
@@ -796,8 +820,7 @@ func (ss *Sim) LocateItem(en env.Env) {
 
 	if ss.TmpValsGpi[0] > 0.01 { //that means there is activity here (i.e. - things were gated in) //this is to avoid if ignore changed the stripe, but it was not due to gating
 		//if math.Abs(float64(ss.PFCmntD1Val[lastidx]-ss.PFCmntD1Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed, but this can only be done if not first trial; not sure if nec.
-		diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
-		diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
+
 		//will be storing into ss.StimStripe[0]
 
 		//want to store the current store type in there.
@@ -810,44 +833,47 @@ func (ss *Sim) LocateItem(en env.Env) {
 		if strings.Contains(ss.TrainEnv.String(), "Store3") {
 			ss.StimStripe[0][2] = 1
 		}
-		if diffinp > diffchunk && len(ss.PFCmntD1Val) > 1 { //gating in from chunk, so need more than just the current store type. only makes sense if after first trial, else nothing else to chunk in
-			//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
-			diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
-			diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
 
-			if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
-				if ss.StimStripe[0][0] == 1 { //store1 is in D1, but its already stored in D1
-				}
-				if ss.StimStripe[0][1] == 1 { //store2 is in D1, but its already there
-				}
-				if ss.SirTask == 3 {
-					if ss.StimStripe[0][2] == 1 { //store3 is in D1, but its already there
+		if ss.chunklay == true {
+			diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
+			diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
+
+			if diffinp > diffchunk && len(ss.PFCmntD1Val) > 1 { //gating in from chunk, so need more than just the current store type. only makes sense if after first trial, else nothing else to chunk in
+				//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
+				diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
+				diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
+
+				if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
+					if ss.StimStripe[0][0] == 1 { //store1 is in D1, but its already stored in D1
 					}
-				}
-
-			} else { //input was closer to D2
-				if ss.StimStripe[1][0] == 1 { //store1 is in D2, and need it in D1
-					ss.StimStripe[0][0] = 1
-				}
-				if ss.StimStripe[1][1] == 1 { //store1 is in D2, and need it in D1
-					ss.StimStripe[0][1] = 1
-				}
-				if ss.SirTask == 3 {
-					if ss.StimStripe[1][2] == 1 { //store3 is in D2, and need it in D1
-						ss.StimStripe[0][2] = 1
+					if ss.StimStripe[0][1] == 1 { //store2 is in D1, but its already there
 					}
-				}
+					if ss.SirTask == 3 {
+						if ss.StimStripe[0][2] == 1 { //store3 is in D1, but its already there
+						}
+					}
 
+				} else { //input was closer to D2
+					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and need it in D1
+						ss.StimStripe[0][0] = 1
+					}
+					if ss.StimStripe[1][1] == 1 { //store1 is in D2, and need it in D1
+						ss.StimStripe[0][1] = 1
+					}
+					if ss.SirTask == 3 {
+						if ss.StimStripe[1][2] == 1 { //store3 is in D2, and need it in D1
+							ss.StimStripe[0][2] = 1
+						}
+					}
+
+				}
 			}
 		}
-
 		//}
 	}
 	//Stripe 2
 	if ss.TmpValsGpi[2] > 0.01 { //that means there is activity here
 		//if math.Abs(float64(ss.PFCmntD2Val[lastidx]-ss.PFCmntD2Val[lastidx-1])) > 0.001 { //double checking that this stripe value changed, not sure if this is nec.
-		diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
-		diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
 		//will be storing into ss.StimStripe[1]
 
 		//want to store the current store type in there.
@@ -860,34 +886,39 @@ func (ss *Sim) LocateItem(en env.Env) {
 		if strings.Contains(ss.TrainEnv.String(), "Store3") {
 			ss.StimStripe[0][2] = 1
 		}
-		if diffinp > diffchunk && len(ss.PFCmntD1Val) > 1 { //gating in from chunk, so need more than just the current store type.
-			//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
-			diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
-			diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
+		if ss.chunklay == true {
 
-			if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
-				if ss.StimStripe[0][0] == 1 { //store1 is in D1, and need in D2
-					ss.StimStripe[1][0] = 1
-				}
-				if ss.StimStripe[0][1] == 1 { //store2 is in D1, and need in D2
-					ss.StimStripe[1][1] = 1
-				}
-				if ss.SirTask == 3 {
-					if ss.StimStripe[0][2] == 1 { //store3 is in D1, and need in D2
-						ss.StimStripe[1][2] = 1
+			diffchunk := math.Abs(float64(PFCmnt1Val - ss.PFCmntD1Val[lastidx]))
+			diffinp := math.Abs(float64(PFCmnt2Val - ss.PFCmntD1Val[lastidx]))
+			if diffinp > diffchunk && len(ss.PFCmntD1Val) > 1 { //gating in from chunk, so need more than just the current store type.
+				//compare stimuli from previous timepoint and whichever is closer to current input (pfcmnt2), will be added in stimstore
+				diffinpD1 := math.Abs(float64(InpVal - ss.PFCmntD1Val[lastidx-1]))
+				diffinpD2 := math.Abs(float64(InpVal - ss.PFCmntD2Val[lastidx-1]))
+
+				if diffinpD1 < diffinpD2 { //input was closer to D1, whatever is stored in StripeD1 should be added
+					if ss.StimStripe[0][0] == 1 { //store1 is in D1, and need in D2
+						ss.StimStripe[1][0] = 1
 					}
-				}
-
-			} else { //input was closer to D2
-				if ss.StimStripe[1][0] == 1 { //store1 is in D2, and already in there
-				}
-				if ss.StimStripe[1][1] == 1 { //store1 is in D2, and already in there
-				}
-				if ss.SirTask == 3 {
-					if ss.StimStripe[1][2] == 1 { //store3 is in D2, but its already there
+					if ss.StimStripe[0][1] == 1 { //store2 is in D1, and need in D2
+						ss.StimStripe[1][1] = 1
 					}
-				}
+					if ss.SirTask == 3 {
+						if ss.StimStripe[0][2] == 1 { //store3 is in D1, and need in D2
+							ss.StimStripe[1][2] = 1
+						}
+					}
 
+				} else { //input was closer to D2
+					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and already in there
+					}
+					if ss.StimStripe[1][1] == 1 { //store1 is in D2, and already in there
+					}
+					if ss.SirTask == 3 {
+						if ss.StimStripe[1][2] == 1 { //store3 is in D2, but its already there
+						}
+					}
+
+				}
 			}
 		}
 		//}
@@ -1351,21 +1382,41 @@ func (ss *Sim) TrainRun() {
 	var err error
 	//fnm := ss.LogFileName("epc")
 	fnm := ""
-	if ss.SirTask == 2 {
-		if ss.RunLocation == "home" {
-			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-		} else if ss.RunLocation == "cluster" {
+	if ss.chunklay == true {
+		if ss.SirTask == 2 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			} else if ss.RunLocation == "cluster" {
 
-			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			}
 		}
-	}
-	if ss.SirTask == 3 {
-		if ss.RunLocation == "home" {
-			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-		} else if ss.RunLocation == "cluster" {
+		if ss.SirTask == 3 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			} else if ss.RunLocation == "cluster" {
 
-			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			}
 		}
+	} else {
+		if ss.SirTask == 2 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			} else if ss.RunLocation == "cluster" {
+
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			}
+		}
+		if ss.SirTask == 3 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			} else if ss.RunLocation == "cluster" {
+
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			}
+		}
+
 	}
 	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 	ss.TrnEpcFile, err = os.Create(fnm)
@@ -1511,21 +1562,41 @@ func (ss *Sim) RunTestAll() {
 
 	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 	fnm := ""
-	if ss.SirTask == 2 {
-		if ss.RunLocation == "home" {
-			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
-		} else if ss.RunLocation == "cluster" {
+	if ss.chunklay == true {
+		if ss.SirTask == 2 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+			} else if ss.RunLocation == "cluster" {
 
-			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+			}
 		}
-	}
-	if ss.SirTask == 3 {
-		if ss.RunLocation == "home" {
-			fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
-		} else if ss.RunLocation == "cluster" {
+		if ss.SirTask == 3 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+			} else if ss.RunLocation == "cluster" {
 
-			fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+			}
 		}
+	} else {
+		if ss.SirTask == 2 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_mew/results/" + ss.Folder + ss.RunName() + ".csv"
+			} else if ss.RunLocation == "cluster" {
+
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv"
+			}
+		}
+		if ss.SirTask == 3 {
+			if ss.RunLocation == "home" {
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + ".csv"
+			} else if ss.RunLocation == "cluster" {
+
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + ".csv"
+			}
+		}
+
 	}
 	ss.TstTrlFile, err = os.Create(fnm)
 
@@ -1777,7 +1848,6 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	inp := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
-	chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
 	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 
 	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
@@ -1829,9 +1899,12 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 	indecode := pc.Decode(ss.TmpValsInp)
 	dt.SetCellFloat("InDecode", row, float64(indecode))
 
-	chunk.UnitVals(&ss.TmpValsCh, "Act")
-	chdecode := pc.Decode(ss.TmpValsCh)
-	dt.SetCellFloat("ChunkDecode", row, float64(chdecode))
+	if ss.chunklay == true {
+		chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
+		chunk.UnitVals(&ss.TmpValsCh, "Act")
+		chdecode := pc.Decode(ss.TmpValsCh)
+		dt.SetCellFloat("ChunkDecode", row, float64(chdecode))
+	}
 
 	pfc.UnitVals(&ss.TmpValsPFC, "Act")
 	for stripe := 0; stripe < ss.Stripes; stripe++ {
@@ -1885,13 +1958,14 @@ func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
 		stnm := "stripe" + string(stripe)
 		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
 	}
+	sch = append(sch, etable.Schema{{"ChunkDecode", etensor.FLOAT64, nil, nil}}...) //adds chunk value to table)
 
 	sch = append(sch, etable.Schema{
 
-		{"OutDecode", etensor.FLOAT64, nil, nil},    //adds outdecode value to table
-		{"OutTarget", etensor.FLOAT64, nil, nil},    //adds target value to table
-		{"InDecode", etensor.FLOAT64, nil, nil},     //adds input value to table
-		{"ChunkDecode", etensor.FLOAT64, nil, nil},  //adds chunk value to table
+		{"OutDecode", etensor.FLOAT64, nil, nil}, //adds outdecode value to table
+		{"OutTarget", etensor.FLOAT64, nil, nil}, //adds target value to table
+		{"InDecode", etensor.FLOAT64, nil, nil},  //adds input value to table
+		//{"ChunkDecode", etensor.FLOAT64, nil, nil},  //adds chunk value to table
 		{"Lesion", etensor.STRING, nil, nil},        //adds lesion type
 		{"LesionProp", etensor.FLOAT64, nil, nil},   //adds prop of trials with lesion
 		{"LesionApplied", etensor.STRING, nil, nil}, //add if lesion was actually applied in that test trial
@@ -1933,7 +2007,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	inp := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
-	chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
+	//chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
 	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 
 	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
@@ -1985,9 +2059,12 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	indecode := pc.Decode(ss.TmpValsInp)
 	dt.SetCellFloat("InDecode", row, float64(indecode))
 
-	chunk.UnitVals(&ss.TmpValsCh, "Act")
-	chdecode := pc.Decode(ss.TmpValsCh)
-	dt.SetCellFloat("ChunkDecode", row, float64(chdecode))
+	if ss.chunklay == true {
+		chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
+		chunk.UnitVals(&ss.TmpValsCh, "Act")
+		chdecode := pc.Decode(ss.TmpValsCh)
+		dt.SetCellFloat("ChunkDecode", row, float64(chdecode))
+	}
 
 	pfc.UnitVals(&ss.TmpValsPFC, "Act")
 	for stripe := 0; stripe < ss.Stripes; stripe++ {
@@ -2041,13 +2118,16 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		stnm := "stripe" + string(stripe)
 		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
 	}
+	if ss.chunklay == true {
+		sch = append(sch, etable.Schema{{"ChunkDecode", etensor.FLOAT64, nil, nil}}...) //adds chunk value to table
+	}
 
 	sch = append(sch, etable.Schema{
 
-		{"OutDecode", etensor.FLOAT64, nil, nil},    //adds outdecode value to table
-		{"OutTarget", etensor.FLOAT64, nil, nil},    //adds target value to table
-		{"InDecode", etensor.FLOAT64, nil, nil},     //adds input value to table
-		{"ChunkDecode", etensor.FLOAT64, nil, nil},  //adds chunk value to table
+		{"OutDecode", etensor.FLOAT64, nil, nil}, //adds outdecode value to table
+		{"OutTarget", etensor.FLOAT64, nil, nil}, //adds target value to table
+		{"InDecode", etensor.FLOAT64, nil, nil},  //adds input value to table
+		//{"ChunkDecode", etensor.FLOAT64, nil, nil},  //adds chunk value to table
 		{"Lesion", etensor.STRING, nil, nil},        //adds lesion type
 		{"LesionProp", etensor.FLOAT64, nil, nil},   //adds prop of trials with lesion
 		{"LesionApplied", etensor.STRING, nil, nil}, //add if lesion was actually applied in that test trial
@@ -2552,7 +2632,11 @@ func (ss *Sim) CmdArgs() {
 
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
-			ss.Tag = "hybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			if ss.chunklay == true {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "chunkhybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			} else {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			}
 			//ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
@@ -2577,21 +2661,41 @@ func (ss *Sim) CmdArgs() {
 		var err error
 		//fnm := ss.LogFileName("epc")
 		fnm := ""
-		if ss.SirTask == 2 {
-			if ss.RunLocation == "home" {
-				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-			} else if ss.RunLocation == "cluster" {
+		if ss.chunklay {
+			if ss.SirTask == 2 {
+				if ss.RunLocation == "home" {
+					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				} else if ss.RunLocation == "cluster" {
 
-				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				}
 			}
-		}
-		if ss.SirTask == 3 {
-			if ss.RunLocation == "home" {
-				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-			} else if ss.RunLocation == "cluster" {
+			if ss.SirTask == 3 {
+				if ss.RunLocation == "home" {
+					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				} else if ss.RunLocation == "cluster" {
 
-				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				}
 			}
+		} else {
+			if ss.SirTask == 2 {
+				if ss.RunLocation == "home" {
+					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				} else if ss.RunLocation == "cluster" {
+
+					fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				}
+			}
+			if ss.SirTask == 3 {
+				if ss.RunLocation == "home" {
+					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				} else if ss.RunLocation == "cluster" {
+
+					fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				}
+			}
+
 		}
 		ss.TrnEpcFile, err = os.Create(fnm)
 		if err != nil {
