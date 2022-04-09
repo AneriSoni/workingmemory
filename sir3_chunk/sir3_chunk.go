@@ -609,8 +609,13 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj = net.ConnectLayersPrjn(stimloc, mtxNoGo, full, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
 
-	pj = net.ConnectLayers(inp, pfcMnt, fmintop, emer.Forward) //hybrid model
-	//pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward) //original model
+	if ss.chunklay == true {
+		pj = net.ConnectLayers(inp, pfcMnt, fmintop, emer.Forward) //hybrid model
+		//pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward) //original model
+	} else {
+		pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward)
+	}
+
 	pj.SetClass("PFCFixed")
 
 	net.ConnectLayers(inp, hid, full, emer.Forward) //turned off for checking chunking
