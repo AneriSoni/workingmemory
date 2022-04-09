@@ -309,6 +309,7 @@ type Sim struct {
 	RewThreshold   float64 `desc: "threshold for reward function"`
 	RewardFunction string  `desc: "reward function, if decoded - use decoded value, otherwise use the unit activations function "`
 	RewardType     string  `desc: "type of reward function - either cont or based on threshold"`
+	denom          float64 `desc: "denom in the exp for continuous exp. reward function"`
 
 	StimStripe [][]float64 `desc: "tells which stimulus is stored in which stripe"`
 	SirTask    int         `desc: "tells which task type it is"`
@@ -500,6 +501,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.RewThreshold = 5.5
 	ss.RewardFunction = "unitdifference"
 	ss.RewardType = ""
+	ss.denom = 20.0
 
 	ss.Lesion = "None"
 	ss.LesionProp = 0
@@ -1191,9 +1193,11 @@ func (ss *Sim) ApplyReward(train bool) {
 		stim_diff_shift := float64(90) //this is the shifting factor.
 		decodeddiff_final := math.Mod(decodeddiff+stim_diff_shift, stim_diff_half) - stim_diff_shift
 
-		if ss.RewardType == "cont" {
-
+		if ss.RewardType == "contlinear" {
 			en.SetRewardCont(math.Abs(decodeddiff_final), stim_diff_half)
+
+		} else if ss.RewardType == "contexp" {
+			en.SetRewardContExp(math.Abs(decodeddiff_final), ss.denom)
 
 		} else {
 			en.SetRewardThres(math.Abs(decodeddiff_final), ss.RewThreshold) //comparing the decoded values.
@@ -1201,11 +1205,15 @@ func (ss *Sim) ApplyReward(train bool) {
 
 	} else if ss.RewardFunction == "unitdifference" {
 
-		if ss.RewardType == "cont" {
+		if ss.RewardType == "contlinear" {
 			en.SetRewardCont(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), float64(ss.LayerSize))
+		}
+		if ss.RewardType == "contexp" {
+			en.SetRewardContExp(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.denom)
 		} else {
 			en.SetRewardThres(float64(sumarray(diff(ss.TmpVals2, ss.TmpVals))), ss.RewThreshold) //based on difference in unit activation + threshold (in sir_env) //
 		}
+
 	}
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(leabra.LeabraLayer).AsLeabra()
@@ -2583,6 +2591,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.TestEnv.StimDist, "TestStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for test")
 	flag.StringVar(&ss.RewardFunction, "RewardFunction", "unitdifference", "reward function either unitdifference or decoded")
 	flag.StringVar(&ss.RewardType, "RewardType", "", "reward function either continuous or based on threshold")
+	flag.Float64Var(&ss.denom, "denom", 20.0, "denom for cont exp reward function")
 	flag.StringVar(&ss.RunLocation, "RunLocation", "cluster", "location where code is being run so that files can be saved in correct place")
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
@@ -2590,6 +2599,7 @@ func (ss *Sim) CmdArgs() {
 
 	fmt.Printf("lesion: %s", ss.Lesion)
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
+	fmt.Printf("denom: %v", ss.denom)
 	if note != "" {
 		fmt.Printf("note: %s\n", note)
 	}
