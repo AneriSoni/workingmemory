@@ -1037,10 +1037,12 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 						if stripe1items < stripe2items {
 							loc[0] = 1
 							loc[1] = 0
+							stripe2 = false
 
 						} else if stripe1items >= stripe2items {
 							loc[0] = 0
 							loc[1] = 1
+							stripe1 = false
 						}
 
 					}
@@ -1075,8 +1077,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 					}
 				}
 				if strings.Contains(tr, "Recall3") {
-					stripe1 := false
-					stripe2 := false
+
 					if ss.StimStripe[0][2] == 1 {
 						stripe1 = true
 						loc[0] = 1
