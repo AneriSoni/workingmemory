@@ -58,6 +58,8 @@ type SIREnv struct {
 	StimDist string  `desc:"true or false, if the distance between stimuli should be constrianed"`
 	MinDist  float64 `desc:"minimum distance between two stimuli"`
 	MaxDist  float64 `desc:"maximum distance between two simuli"`
+
+	IgnoreTr bool `desc:"decides if we want to have ignore trials or not"`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -173,7 +175,7 @@ func (ev *SIREnv) SetRewardThres(netout float64, threshold float64) bool {
 func (ev *SIREnv) SetRewardCont(netout float64, stim_diff_half float64) bool {
 	//here netout is the differnece between the decoded input and decoded output.
 	rw := true
-	ev.Reward.Values[0] = (stim_diff_half/2 - netout) / stim_diff_half
+	ev.Reward.Values[0] = (stim_diff_half/2 - netout) / (stim_diff_half / 2)
 	return rw
 }
 
@@ -188,6 +190,7 @@ func (ev *SIREnv) SetRewardContExp(netout float64, denom float64) bool {
 func (ev *SIREnv) StepSIR() {
 	for {
 		ev.Act = Actions(rand.Intn(int(ActionsN)))
+		//fmt.Printf("%s", ev.Act)
 		if ev.Act == Store1 && ev.Maint1 >= 0 { // already full
 			continue
 		}
@@ -199,6 +202,10 @@ func (ev *SIREnv) StepSIR() {
 		}
 		if ev.Act == Recall2 && ev.Maint2 < 0 { // nothing
 			continue
+		}
+		if ev.Act == Ignore && ev.IgnoreTr == false { // we do not want any ignore trials
+			continue
+
 		}
 		break
 	}

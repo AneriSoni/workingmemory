@@ -316,6 +316,8 @@ type Sim struct {
 	Acts       int         `desc: "tells  how many possible actions, helps build layers"`
 	chunklay   bool        `desc: "tells if there will be chunk or not. "`
 
+	IgnoreTr bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
+
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
 	TrlRewPred    float64 `inactive:"+" desc:"reward prediction level on this trial"`
@@ -461,6 +463,8 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxTrls = 100
 	}
 
+	ss.IgnoreTr = true
+
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
 	ss.TrainEnv.SetNStim(4)
@@ -473,6 +477,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.StimDist = "false" //will be defined in the tag
 	ss.TrainEnv.MaxDist = 45
 	ss.TrainEnv.MinDist = 0
+	ss.TrainEnv.IgnoreTr = ss.IgnoreTr
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
@@ -486,6 +491,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.StimDist = "false" //will be defined in the tag
 	ss.TestEnv.MaxDist = 45
 	ss.TestEnv.MinDist = 0
+	ss.TestEnv.IgnoreTr = ss.IgnoreTr
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
@@ -2599,6 +2605,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.RewardType, "RewardType", "", "reward function either continuous or based on threshold")
 	flag.Float64Var(&ss.denom, "denom", 20.0, "denom for cont exp reward function")
 	flag.StringVar(&ss.RunLocation, "RunLocation", "cluster", "location where code is being run so that files can be saved in correct place")
+	flag.BoolVar(&ss.IgnoreTr, "IgnoreTr", true, "whether we should have ignore trials.")
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
