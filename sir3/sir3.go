@@ -92,6 +92,14 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.WtInit.Sym":  "false",
 				}},
+			{Sel: ".BgFixed2", Desc: "BG Matrix -> GP wiring",
+				Params: params.Params{
+					"Prjn.Learn.Learn": "false",
+					"Prjn.WtInit.Mean": "1",
+					"Prjn.WtInit.Var":  "0",
+					"Prjn.WtInit.Sym":  "false",
+				}},
+
 			{Sel: "RWPrjn", Desc: "Reward prediction -- into PVi",
 				Params: params.Params{
 					"Prjn.Learn.Lrate": "0.02",
@@ -647,6 +655,9 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 		pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
 		//pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
 		pj.SetClass("PFCFixedChunk")
+
+		//pj = net.ConnectLayersPrjn(mtxGo, gpi, prjn.NewPoolOneToOne(),emer.Forward, &pbwm.GPiThalPrjn{}) #this does not work.
+		//pj.SetClass("BgFixed2") //this does not work
 	}
 
 	snc.SendDA.AddAllBut(net, nil) // send dopamine to all layers..
@@ -839,12 +850,23 @@ func (ss *Sim) LocateItem(en env.Env) {
 		//want to store the current store type in there.
 		if strings.Contains(ss.TrainEnv.String(), "Store1") {
 			ss.StimStripe[0][0] = 1
+			ss.StimStripe[0][1] = 0 //clear out store 2
+			if ss.SirTask == 3 {
+				ss.StimStripe[0][2] = 0 //clear out store 3
+			}
 		}
 		if strings.Contains(ss.TrainEnv.String(), "Store2") {
 			ss.StimStripe[0][1] = 1
+			ss.StimStripe[0][0] = 0 //clear out store 1
+			if ss.SirTask == 3 {
+				ss.StimStripe[0][2] = 0 //clear out store 3
+			}
 		}
 		if strings.Contains(ss.TrainEnv.String(), "Store3") {
 			ss.StimStripe[0][2] = 1
+			ss.StimStripe[0][0] = 0 //clear out store 1
+			ss.StimStripe[0][1] = 0 //clear out store 2
+
 		}
 
 		if ss.chunklay == true {
@@ -892,12 +914,22 @@ func (ss *Sim) LocateItem(en env.Env) {
 		//want to store the current store type in there.
 		if strings.Contains(ss.TrainEnv.String(), "Store1") {
 			ss.StimStripe[1][0] = 1
+			ss.StimStripe[1][1] = 0 //clear out store 2
+			if ss.SirTask == 3 {
+				ss.StimStripe[1][2] = 0 //clear out store 3
+			}
 		}
 		if strings.Contains(ss.TrainEnv.String(), "Store2") {
 			ss.StimStripe[1][1] = 1
+			ss.StimStripe[1][0] = 0 //clear out store 1
+			if ss.SirTask == 3 {
+				ss.StimStripe[1][2] = 0 //clear out store 3
+			}
 		}
 		if strings.Contains(ss.TrainEnv.String(), "Store3") {
-			ss.StimStripe[0][2] = 1
+			ss.StimStripe[1][2] = 1
+			ss.StimStripe[1][0] = 0 //clear out store 1
+			ss.StimStripe[1][1] = 0 //clear out store 2
 		}
 		if ss.chunklay == true {
 
