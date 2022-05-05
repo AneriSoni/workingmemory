@@ -2655,14 +2655,18 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.RewardType, "RewardType", "", "reward function either continuous or based on threshold")
 	flag.Float64Var(&ss.denom, "denom", 20.0, "denom for cont exp reward function")
 	flag.StringVar(&ss.RunLocation, "RunLocation", "cluster", "location where code is being run so that files can be saved in correct place")
-	flag.BoolVar(&ss.IgnoreTr, "IgnoreTr", true, "whether we should have ignore trials.")
+	flag.BoolVar(&ss.TrainEnv.IgnoreTr, "TrainIgnoreTr", true, "whether we should have ignore trials.")
+	flag.BoolVar(&ss.TestEnv.IgnoreTr, "TestIgnoreTr", true, "whether we should have ignore trials.")
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
 
 	fmt.Printf("lesion: %s", ss.Lesion)
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
-	fmt.Printf("denom: %v", ss.denom)
+	fmt.Printf("denom: %v\n", ss.denom)
+	//fmt.Printf(ss.RunLocation)
+	//fmt.Printf("%v \n", ss.TrainEnv.IgnoreTr)
+	//fmt.Printf("%v \n", ss.TestEnv.IgnoreTr)
 	if note != "" {
 		fmt.Printf("note: %s\n", note)
 	}
@@ -2721,7 +2725,7 @@ func (ss *Sim) CmdArgs() {
 			}
 			//ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
-			ss.TrainRun()
+			//ss.TrainRun()
 			ss.RunTestAll()
 		}
 	}
