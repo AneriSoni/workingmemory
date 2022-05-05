@@ -2725,7 +2725,7 @@ func (ss *Sim) CmdArgs() {
 			}
 			//ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
-			//ss.TrainRun()
+			ss.TrainRun()
 			ss.RunTestAll()
 		}
 	}
