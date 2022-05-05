@@ -133,6 +133,141 @@ def training_curve_average(base, specific_file = 'None', additional_title = ''):
         plt.title(f.split('workingmemory')[1].split('/')[1]+additional_title)
     plt.show()
     return SSE_avg,Epoch
+
+def getfiles(base):
+    files = os.listdir(base)
+    files = [f for f in files if '.csv' in f]
+    full_files = [base+f for f in files if 'EpcLog' not in f]
+    return full_files
+
+def geterror(base):
+    full_files = getfiles(base)
+    num_models = len(full_files)
+    p = Precision()
+    L1_means = np.zeros(num_models)
+    L1_vars = np.zeros(num_models)
+    for f in range(len(full_files)):
+        #import pdb; pdb.set_trace()
+        err_model = p.mult_models([full_files[f]])
+        L1 = np.abs(err_model)
+        L1_means[f]=np.mean(L1)
+        L1_vars[f] = np.var(L1)
+    #mse = np.sqrt(np.mean(err**2)) 
+    total_mean = np.mean(L1_means)
+    total_var = np.mean(L1_vars)/num_models
+    return err_model, total_mean, np.sqrt(total_var)
+    
+
+def geterror_array(base):
+    full_files = getfiles(base)
+    p = Precision()
+    err = p.mult_models(full_files)
+    #mse = np.sqrt(np.mean(err**2)) 
+    meanL2 = (np.mean(err**2))
+    var = np.var(err**2)/20
+    std = np.sqrt(var)
+    return err, np.sqrt(meanL2), np.sqrt(std)
+
+def plot_title(base):
+    
+    if 'contexp' in base:
+        rewardtype = 'Continuous Exponential'
+    elif 'RewThresh' in base:
+        rewardtype = 'Binary'
+    else:
+        rewardtype = 'Continuous Linear'
+        
+    if 'decodedrew' in base:
+        rewardfun = 'Decoded'
+    else: 
+        rewardfun = 'Unit Difference'
+        
+    if 'NoStimLoc' in base:
+        stimloc = ', No Stim Loc'
+    else: 
+        stimloc = ", Stim Loc Used"
+   
+    if 'NoIgnore' in base:
+        ignore = ', No Ignore Trials'
+    else:
+        ignore = ''
+
+    if "StimRange0to45" in base:
+        stim_dist = ', StimDist Max 45'
+    else:
+        stim_dist = ""
+
+
+    title = 'Reward Function: ' + rewardtype +', ' +rewardfun +stimloc + ignore +stim_dist#+' '+additional_title
+    return title
+    
+
+def mse_allmodels(base, base2, experiment, plot_errorbars = True):
+    sir2_file = base + "sir2_new/" +base2+experiment
+    sir2_chunk_file = base + "sir2_chunk/" +base2+"hybrid/"+experiment
+    sir3_file = base + "sir3/" +base2+experiment
+    sir3_chunk_file = base + "sir3_chunk/" +base2+"hybrid/"+experiment
+    
+    err_sir2, mse_sir2, std_sir2 = geterror(sir2_file)
+    err_sir2_chunk, mse_sir2_chunk, std_sir2_chunk = geterror(sir2_chunk_file)
+    err_sir3, mse_sir3, std_sir3 = geterror(sir3_file)
+    err_sir3_chunk, mse_sir3_chunk, std_sir3_chunk = geterror(sir3_chunk_file)
+    
+    title = plot_title(sir2_file)
+    if plot_errorbars == True:
+        plt.errorbar([2,3],[mse_sir2,mse_sir3], [std_sir2,std_sir3])
+        plt.errorbar([2,3],[mse_sir2_chunk,mse_sir3_chunk], [std_sir2_chunk,std_sir3_chunk])
+    else:
+        plt.plot([2,3],[mse_sir2,mse_sir3])
+        plt.plot([2,3],[mse_sir2_chunk,mse_sir3_chunk])
+    plt.xticks([2,3])
+    plt.xlim([1.8,3.2])
+    plt.ylabel('Absolute Error Averaged over Models')
+    #plt.ylabel(r'$\sqrt{MSE}$')
+    plt.xlabel('Number of Items')
+    plt.legend(['No Chunk', 'Chunk'])
+    plt.title(title)
+    
+    
+
+
+
+def modelerr(base, title = '', additional_title = ''): 
+    files = os.listdir(base)
+    files = [f for f in files if '.csv' in f]
+    full_files = [base+f for f in files if 'EpcLog' not in f]
+    p = Precision()
+    err = p.mult_models(full_files)
+    #print(len(err))
+    plt.figure()
+    plt.hist(err, bins = 50)
+
+    if "StimRange0to45" in base:
+        model_name = base.split('workingmemory')[1].split('/')[1]+' StimDist Max 45'
+    else:
+        model_name = base.split('workingmemory')[1].split('/')[1] 
+    if 'decodedrew' in base:
+        rewardfun = 'Decoded'
+    else: 
+        rewardfun = 'Unit Difference'
+    if 'contexp' in base:
+        rewardtype = 'Continuous Exponential'
+    elif 'RewThresh' in base:
+        rewardtype = 'Binary'
+    else:
+        rewardtype = 'Continuous Linear'
+    if 'NoIgnore' in base:
+        ignore = ', No Ignore Trials'
+    else:
+        ignore = ''
+    if title == '':
+        title = model_name + ', Reward Function: ' + rewardtype +', ' +rewardfun +' '+ ignore +' '+additional_title
+    plt.title(title)
+    mse = np.sqrt(np.mean(err**2))
+    legend = 'mse = {:.2f}'.format(mse)
+    plt.legend([legend])
+    plt.show()
+
         
 
 class Precision():
