@@ -178,7 +178,7 @@ func (ev *SIREnv) SetRewardThres(netout float64, threshold float64) bool {
 func (ev *SIREnv) SetRewardCont(netout float64, stim_diff_half float64) bool {
 	//here netout is the differnece between the decoded input and decoded output.
 	rw := true
-	ev.Reward.Values[0] = (stim_diff_half/2 - netout) / (stim_diff_half/2) 
+	ev.Reward.Values[0] = (stim_diff_half - netout) / (stim_diff_half) 
 	return rw
 }
 func (ev *SIREnv) SetRewardContExp(netout float64, denom float64) bool {

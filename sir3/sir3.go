@@ -670,6 +670,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 		return
 	}
 	net.InitWts()
+	//ly := ss.Net.LayerByName("GPiThal").(leabra.LeabraLayer).AsLeabra()
+	//ly.RcvPrjns[0].SetSynVal("bias", 0, 0, 1.0)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1233,9 +1235,11 @@ func (ss *Sim) ApplyReward(train bool) {
 
 	if ss.RewardFunction == "decoded" {
 		decodeddiff := float64(outdecode - outdecode2)
+		stim_diff := float64(360)
+		stim_diff_shift := float64(180)
 		stim_diff_half := float64(180) //the stim can range from 0 to 360. and (360-0)/2 - 180
-		stim_diff_shift := float64(90) //this is the shifting factor.
-		decodeddiff_final := math.Mod(decodeddiff+stim_diff_shift, stim_diff_half) - stim_diff_shift
+		//stim_diff_shift := float64(90) //this is the shifting factor.
+		decodeddiff_final := math.Mod(decodeddiff+stim_diff_shift, stim_diff) - stim_diff_shift
 
 		if ss.RewardType == "contlinear" {
 			en.SetRewardCont(math.Abs(decodeddiff_final), stim_diff_half)
@@ -2660,6 +2664,9 @@ func (ss *Sim) CmdArgs() {
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
+
+	//ly := ss.Net.LayerByName("GPiThal").(leabra.LeabraLayer).AsLeabra()
+	//ly.RcvPrjns[0].SetSynVal("bias", 0, 0, 1.0)
 
 	fmt.Printf("lesion: %s", ss.Lesion)
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
