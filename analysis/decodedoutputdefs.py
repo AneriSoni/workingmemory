@@ -300,7 +300,8 @@ class Precision():
         
         diffrecall =np.array(decodeout_recall)-np.array(target_recall)
         #diffrecall = np.abs(diffrecall) #this is wrong wrong wrong....uncomment this (comment out the below line) and plot for reason why. 
-        diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version 
+        #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version, wrong mod factor
+        diffrecall = (np.mod(diffrecall+stim_diff, self.stim[1])-stim_diff)
         #diffrecall = np.mod(diffrecall, stim_diff)  #this is wrong because the errors are from 0 to 360 instead of centered at 0.
         
         #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)/stim_diff*360 #degrees

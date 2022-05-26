@@ -523,7 +523,7 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.LayerSize = 20
 	ss.Stripes = 2
-	ss.SirTask = 2
+	ss.SirTask = 4
 	ss.chunklay = false
 
 	ss.StimStripe = make([][]float64, ss.Stripes)

@@ -539,6 +539,12 @@ func (ss *Sim) ConfigEnv() {
 			ss.StimStripe[i] = make([]float64, 3) //this is sir3 so 3 store typess
 			ss.Acts = 7
 		}
+
+		//if len(ss.TrainEnv.CtrlInput.Values) == 9 {
+		if ss.SirTask == 4 {
+			ss.StimStripe[i] = make([]float64, 4) //this is sir3 so 3 store typess
+			ss.Acts = 9
+		}
 	}
 
 }
@@ -856,6 +862,10 @@ func (ss *Sim) LocateItem(en env.Env) {
 			if ss.SirTask == 3 {
 				ss.StimStripe[0][2] = 0 //clear out store 3
 			}
+			if ss.SirTask == 4 {
+				ss.StimStripe[0][2] = 0 //clear out store 3
+				ss.StimStripe[0][3] = 0 //clear out store 4
+			}
 		}
 		if strings.Contains(ss.TrainEnv.String(), "Store2") {
 			ss.StimStripe[0][1] = 1
@@ -863,12 +873,25 @@ func (ss *Sim) LocateItem(en env.Env) {
 			if ss.SirTask == 3 {
 				ss.StimStripe[0][2] = 0 //clear out store 3
 			}
+			if ss.SirTask == 4 {
+				ss.StimStripe[0][2] = 0 //clear out store 3
+				ss.StimStripe[0][3] = 0 //clear out store 4
+			}
 		}
 		if strings.Contains(ss.TrainEnv.String(), "Store3") {
 			ss.StimStripe[0][2] = 1
 			ss.StimStripe[0][0] = 0 //clear out store 1
 			ss.StimStripe[0][1] = 0 //clear out store 2
+			if ss.SirTask == 4 {
+				ss.StimStripe[0][3] = 0 //clear out store 4
+			}
 
+		}
+		if strings.Contains(ss.TrainEnv.String(), "Store4") {
+			ss.StimStripe[0][3] = 1
+			ss.StimStripe[0][0] = 0 //clear out store 1
+			ss.StimStripe[0][1] = 0 //clear out store 2
+			ss.StimStripe[0][2] = 0 //clear out store 3
 		}
 
 		if ss.chunklay == true {
@@ -889,6 +912,12 @@ func (ss *Sim) LocateItem(en env.Env) {
 						if ss.StimStripe[0][2] == 1 { //store3 is in D1, but its already there
 						}
 					}
+					if ss.SirTask == 4 {
+						if ss.StimStripe[0][2] == 1 { //store3 is in D1, but its already there
+						}
+						if ss.StimStripe[0][3] == 1 { //store4 is in D1, but its already there
+						}
+					}
 
 				} else { //input was closer to D2
 					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and need it in D1
@@ -900,6 +929,14 @@ func (ss *Sim) LocateItem(en env.Env) {
 					if ss.SirTask == 3 {
 						if ss.StimStripe[1][2] == 1 { //store3 is in D2, and need it in D1
 							ss.StimStripe[0][2] = 1
+						}
+					}
+					if ss.SirTask == 4 {
+						if ss.StimStripe[1][2] == 1 { //store3 is in D2, and need it in D1
+							ss.StimStripe[0][2] = 1
+						}
+						if ss.StimStripe[1][3] == 1 { //store4 is in D2, and need it in D1
+							ss.StimStripe[0][3] = 1
 						}
 					}
 
@@ -920,6 +957,10 @@ func (ss *Sim) LocateItem(en env.Env) {
 			if ss.SirTask == 3 {
 				ss.StimStripe[1][2] = 0 //clear out store 3
 			}
+			if ss.SirTask == 4 {
+				ss.StimStripe[1][2] = 0 //clear out store 3
+				ss.StimStripe[1][3] = 0 //clear out store 4
+			}
 		}
 		if strings.Contains(ss.TrainEnv.String(), "Store2") {
 			ss.StimStripe[1][1] = 1
@@ -927,11 +968,26 @@ func (ss *Sim) LocateItem(en env.Env) {
 			if ss.SirTask == 3 {
 				ss.StimStripe[1][2] = 0 //clear out store 3
 			}
+			if ss.SirTask == 4 {
+				ss.StimStripe[1][2] = 0 //clear out store 3
+				ss.StimStripe[1][3] = 0 //clear out store 4
+			}
 		}
 		if strings.Contains(ss.TrainEnv.String(), "Store3") {
 			ss.StimStripe[1][2] = 1
 			ss.StimStripe[1][0] = 0 //clear out store 1
 			ss.StimStripe[1][1] = 0 //clear out store 2
+			if ss.SirTask == 4 {
+				ss.StimStripe[1][3] = 0 //clear out store 4
+			}
+
+		}
+		if strings.Contains(ss.TrainEnv.String(), "Store4") {
+			ss.StimStripe[1][3] = 1
+			ss.StimStripe[1][0] = 0 //clear out store 1
+			ss.StimStripe[1][1] = 0 //clear out store 2
+			ss.StimStripe[1][2] = 0 //clear out store 3
+
 		}
 		if ss.chunklay == true {
 
@@ -954,6 +1010,14 @@ func (ss *Sim) LocateItem(en env.Env) {
 							ss.StimStripe[1][2] = 1
 						}
 					}
+					if ss.SirTask == 4 {
+						if ss.StimStripe[0][2] == 1 { //store3 is in D1, and need in D2
+							ss.StimStripe[1][2] = 1
+						}
+						if ss.StimStripe[0][3] == 1 { //store4 is in D1, and need in D2
+							ss.StimStripe[1][3] = 1
+						}
+					}
 
 				} else { //input was closer to D2
 					if ss.StimStripe[1][0] == 1 { //store1 is in D2, and already in there
@@ -962,6 +1026,12 @@ func (ss *Sim) LocateItem(en env.Env) {
 					}
 					if ss.SirTask == 3 {
 						if ss.StimStripe[1][2] == 1 { //store3 is in D2, but its already there
+						}
+					}
+					if ss.SirTask == 4 {
+						if ss.StimStripe[1][2] == 1 { //store3 is in D2, but its already there
+						}
+						if ss.StimStripe[1][3] == 1 { //store4 is in D2, but its already there
 						}
 					}
 
@@ -1143,6 +1213,35 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 
 					}
 				}
+
+				if strings.Contains(tr, "Recall4") {
+
+					if ss.StimStripe[0][3] == 1 {
+						stripe1 = true
+						loc[0] = 1
+
+					}
+					if ss.StimStripe[1][3] == 1 {
+						stripe2 = true
+						loc[1] = 1
+					}
+					if stripe1 == true && stripe2 == true {
+						stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
+						stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
+						if stripe1items < stripe2items {
+							loc[0] = 1
+							loc[1] = 0
+							stripe2 = false
+
+						} else if stripe1items >= stripe2items {
+							loc[0] = 0
+							loc[1] = 1
+							stripe1 = false
+						}
+
+					}
+				}
+
 				if stripe1 == true { //clear out stripe 1
 					ss.StimStripe[0][0] = 0
 					ss.StimStripe[0][1] = 0
@@ -1462,6 +1561,15 @@ func (ss *Sim) TrainRun() {
 				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
 		}
+		if ss.SirTask == 4 {
+			if ss.RunLocation == "home" {
+				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			} else if ss.RunLocation == "cluster" {
+				path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			}
+		}
 	} else {
 		if ss.SirTask == 2 {
 			if ss.RunLocation == "home" {
@@ -1479,6 +1587,15 @@ func (ss *Sim) TrainRun() {
 			} else if ss.RunLocation == "cluster" {
 				path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
 				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			}
+		}
+		if ss.SirTask == 4 {
+			if ss.RunLocation == "home" {
+				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+			} else if ss.RunLocation == "cluster" {
+				path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
 		}
 
@@ -1655,6 +1772,15 @@ func (ss *Sim) RunTestAll() {
 				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 			}
 		}
+		if ss.SirTask == 4 {
+			if ss.RunLocation == "home" {
+				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+			} else if ss.RunLocation == "cluster" {
+				path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+			}
+		}
 	} else {
 		if ss.SirTask == 2 {
 			if ss.RunLocation == "home" {
@@ -1675,6 +1801,15 @@ func (ss *Sim) RunTestAll() {
 			}
 		}
 
+		if ss.SirTask == 4 {
+			if ss.RunLocation == "home" {
+				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder
+				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + ".csv"
+			} else if ss.RunLocation == "cluster" {
+				path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
+				fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + ".csv"
+			}
+		}
 	}
 	err2 := os.MkdirAll(path, os.ModePerm)
 	if err2 != nil {
@@ -2774,6 +2909,15 @@ func (ss *Sim) CmdArgs() {
 					fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				}
 			}
+			if ss.SirTask == 4 {
+				if ss.RunLocation == "home" {
+					path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder
+					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				} else if ss.RunLocation == "cluster" {
+					path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
+					fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				}
+			}
 		} else {
 			if ss.SirTask == 2 {
 				if ss.RunLocation == "home" {
@@ -2791,6 +2935,15 @@ func (ss *Sim) CmdArgs() {
 				} else if ss.RunLocation == "cluster" {
 					path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
 					fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				}
+			}
+			if ss.SirTask == 4 {
+				if ss.RunLocation == "home" {
+					path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder
+					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				} else if ss.RunLocation == "cluster" {
+					path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
+					fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				}
 			}
 
