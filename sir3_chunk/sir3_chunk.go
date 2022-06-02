@@ -324,7 +324,8 @@ type Sim struct {
 	Acts       int         `desc: "tells  how many possible actions, helps build layers"`
 	chunklay   bool        `desc: "tells if there will be chunk or not. "`
 
-	IgnoreTr bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
+	IgnoreTr     bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
+	NumStimConst int  `desc: "tells how many stimuli the model will get to see "`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -472,6 +473,7 @@ func (ss *Sim) ConfigEnv() {
 	}
 
 	ss.IgnoreTr = true
+	ss.NumStimConst = ss.SirTask
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
@@ -486,6 +488,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.MaxDist = 45
 	ss.TrainEnv.MinDist = 0
 	ss.TrainEnv.IgnoreTr = ss.IgnoreTr
+	ss.TrainEnv.NumStimConst = ss.NumStimConst
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
@@ -500,6 +503,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.MaxDist = 45
 	ss.TestEnv.MinDist = 0
 	ss.TestEnv.IgnoreTr = ss.IgnoreTr
+	ss.TestEnv.NumStimConst = ss.NumStimConst
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
@@ -2796,6 +2800,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.RunLocation, "RunLocation", "cluster", "location where code is being run so that files can be saved in correct place")
 	flag.BoolVar(&ss.TrainEnv.IgnoreTr, "TrainIgnoreTr", true, "whether we should have ignore trials.")
 	flag.BoolVar(&ss.TestEnv.IgnoreTr, "TestIgnoreTr", true, "whether we should have ignore trials.")
+	flag.IntVar(&ss.NumStimConst, "NumStimConst", ss.SirTask, "number of stimuli that model sees.")
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
@@ -2856,6 +2861,42 @@ func (ss *Sim) CmdArgs() {
 
 			}
 		}
+	} else if ss.Experiment == "pretrain2" {
+		for _, v := range models {
+			if ss.chunklay == true {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "chunkhybridmodel_pretrain2" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			} else {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model_pretrain2" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			}
+
+			ss.NumStimConst = 2
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+
+			ss.NumStimConst = 4
+			ss.TrainRun()
+
+			ss.RunTestAll()
+		}
+
+	} else if ss.Experiment == "pretrain3" {
+		for _, v := range models {
+			if ss.chunklay == true {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "chunkhybridmodel_pretrain3" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			} else {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model_pretrain3" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			}
+
+			ss.NumStimConst = 3
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+
+			ss.NumStimConst = 4
+			ss.TrainRun()
+
+			ss.RunTestAll()
+		}
+
 	} else {
 
 		for _, v := range models {
@@ -2865,6 +2906,7 @@ func (ss *Sim) CmdArgs() {
 			} else {
 				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
 			}
+
 			//ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
