@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 
@@ -62,7 +63,6 @@ type SIREnv struct {
 	IgnoreTr bool `desc:"decides if we want to have ignore trials or not"`
 
 	NumStimConst int `desc:"decides how many items the task should be trained on. "`
-
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -211,8 +211,12 @@ func (ev *SIREnv) StepSIR() {
 
 		}
 		if ev.NumStimConst != 2 {
-			if ev.Act == Store2 {
-				continue
+			if ev.NumStimConst == 1 {
+				if ev.Act == Store2 {
+					continue
+				}
+			} else {
+				log.Fatal("not correct numstimconst")
 			}
 		}
 		break

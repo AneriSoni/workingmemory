@@ -229,9 +229,14 @@ func (ev *SIREnv) StepSIR() {
 		}
 		//fmt.Printf("%v", ev.NumStimConst)
 		if ev.NumStimConst != 4 {
-			if ev.Act == Store4 {
-				continue
+			if ev.NumStimConst == 3 {
+				if ev.Act == Store4 {
+					continue
+				}
 			} else if ev.NumStimConst == 2 {
+				if ev.Act == Store4 {
+					continue
+				}
 				if ev.Act == Store3 {
 					continue
 				}
@@ -240,6 +245,9 @@ func (ev *SIREnv) StepSIR() {
 					continue
 				}
 				if ev.Act == Store3 {
+					continue
+				}
+				if ev.Act == Store4 {
 					continue
 				}
 			} else {
