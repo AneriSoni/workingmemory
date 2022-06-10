@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -226,24 +227,27 @@ func (ev *SIREnv) StepSIR() {
 			continue
 
 		}
+		//fmt.Printf("%v", ev.NumStimConst)
 		if ev.NumStimConst != 4 {
 			if ev.Act == Store4 {
 				continue
-			}
-			if ev.NumStimConst == 2 {
+			} else if ev.NumStimConst == 2 {
 				if ev.Act == Store3 {
 					continue
 				}
-			}
-			if ev.NumStimConst == 1 {
+			} else if ev.NumStimConst == 1 {
 				if ev.Act == Store2 {
 					continue
 				}
 				if ev.Act == Store3 {
 					continue
 				}
+			} else {
+				log.Fatal("not correct numstimconst")
+
 			}
 		}
+		//fmt.Printf("%v", ev.Act)
 		break
 	}
 	//ev.Stim = rand.Intn(ev.NStim)
