@@ -473,7 +473,11 @@ func (ss *Sim) ConfigEnv() {
 	}
 
 	ss.IgnoreTr = true
+
+	ss.SirTask = 2
+	ss.chunklay = false
 	ss.NumStimConst = ss.SirTask
+	//fmt.Printf("Numconst: %v ;", ss.NumStimConst)
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
@@ -527,8 +531,6 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.LayerSize = 20
 	ss.Stripes = 2
-	ss.SirTask = 2
-	ss.chunklay = false
 
 	ss.StimStripe = make([][]float64, ss.Stripes)
 	for i := range ss.StimStripe {
@@ -2811,6 +2813,12 @@ func (ss *Sim) CmdArgs() {
 	fmt.Printf("lesion: %s", ss.Lesion)
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
 	fmt.Printf("denom: %v\n", ss.denom)
+	fmt.Printf("numstimconst: %v\n", ss.NumStimConst)
+	if ss.NumStimConst != ss.SirTask {
+		ss.TrainEnv.NumStimConst = ss.NumStimConst
+		ss.TestEnv.NumStimConst = ss.NumStimConst
+
+	}
 	//fmt.Printf(ss.RunLocation)
 	//fmt.Printf("%v \n", ss.TrainEnv.IgnoreTr)
 	//fmt.Printf("%v \n", ss.TestEnv.IgnoreTr)
@@ -2868,12 +2876,16 @@ func (ss *Sim) CmdArgs() {
 			} else {
 				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model_pretrain2" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
 			}
-
 			ss.NumStimConst = 2
+			ss.TrainEnv.NumStimConst = ss.NumStimConst
+			ss.TestEnv.NumStimConst = ss.NumStimConst
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
 
+			fmt.Printf(ss.Tag)
 			ss.NumStimConst = 4
+			ss.TrainEnv.NumStimConst = ss.NumStimConst
+			ss.TestEnv.NumStimConst = ss.NumStimConst
 			ss.TrainRun()
 
 			ss.RunTestAll()
@@ -2888,10 +2900,14 @@ func (ss *Sim) CmdArgs() {
 			}
 
 			ss.NumStimConst = 3
+			ss.TrainEnv.NumStimConst = ss.NumStimConst
+			ss.TestEnv.NumStimConst = ss.NumStimConst
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
 
 			ss.NumStimConst = 4
+			ss.TrainEnv.NumStimConst = ss.NumStimConst
+			ss.TestEnv.NumStimConst = ss.NumStimConst
 			ss.TrainRun()
 
 			ss.RunTestAll()

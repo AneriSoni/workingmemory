@@ -2813,6 +2813,12 @@ func (ss *Sim) CmdArgs() {
 	fmt.Printf("lesion: %s", ss.Lesion)
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
 	fmt.Printf("denom: %v\n", ss.denom)
+	fmt.Printf("numstimconst: %v\n", ss.NumStimConst)
+	if ss.NumStimConst != ss.SirTask {
+		ss.TrainEnv.NumStimConst = ss.NumStimConst
+		ss.TestEnv.NumStimConst = ss.NumStimConst
+
+	}
 	//fmt.Printf(ss.RunLocation)
 	//fmt.Printf("%v \n", ss.TrainEnv.IgnoreTr)
 	//fmt.Printf("%v \n", ss.TestEnv.IgnoreTr)
@@ -2870,7 +2876,6 @@ func (ss *Sim) CmdArgs() {
 			} else {
 				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model_pretrain2" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
 			}
-
 			ss.NumStimConst = 2
 			ss.TrainEnv.NumStimConst = ss.NumStimConst
 			ss.TestEnv.NumStimConst = ss.NumStimConst

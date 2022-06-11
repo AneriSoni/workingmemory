@@ -255,7 +255,6 @@ func (ev *SIREnv) StepSIR() {
 
 			}
 		}
-		//fmt.Printf("%v", ev.Act)
 		break
 	}
 	//ev.Stim = rand.Intn(ev.NStim)
