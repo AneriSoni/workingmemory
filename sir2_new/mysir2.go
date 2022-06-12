@@ -2895,6 +2895,7 @@ func (ss *Sim) CmdArgs() {
 			ss.TrainRun()
 
 			ss.RunTestAll()
+			ss.NeedsNewRun = true
 		}
 
 	} else if ss.Experiment == "pretrain3" {
@@ -2917,6 +2918,7 @@ func (ss *Sim) CmdArgs() {
 			ss.TrainRun()
 
 			ss.RunTestAll()
+			ss.NeedsNewRun = true
 		}
 
 	} else {
