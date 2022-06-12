@@ -1404,7 +1404,13 @@ func (ss *Sim) TrainTrial() {
 				ss.StopNow = true
 				return
 			} else {
-				ss.NeedsNewRun = true
+				if ss.Experiment == "pretrain2" || ss.Experiment == "pretrain3" {
+
+				} else {
+					ss.NeedsNewRun = true
+
+				}
+				//fmt.Printf("%v", ss.NeedsNewRun)
 				return
 			}
 		}
