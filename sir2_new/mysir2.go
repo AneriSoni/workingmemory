@@ -46,7 +46,8 @@ import (
 func main() {
 	TheSim.New()
 	TheSim.Config()
-	//TheSim.CmdArgs()
+
+	//TheSim.CmdArgs() //runs the no gui version.
 	if len(os.Args) > 1 {
 		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
@@ -271,8 +272,10 @@ var ParamSets = params.Sets{
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	BurstDaGain float32           `desc:"strength of dopamine bursts: 1 default -- reduce for PD OFF, increase for PD ON"`
-	DipDaGain   float32           `desc:"strength of dopamine dips: 1 default -- reduce to siulate D2 agonists"`
+	//BurstDaGain float32           `desc:"strength of dopamine bursts: 1 default -- reduce for PD OFF, increase for PD ON"`
+	//DipDaGain   float32           `desc:"strength of dopamine dips: 1 default -- reduce to siulate D2 agonists"`
+	BurstDaGain float64           `desc:"strength of dopamine bursts: 1 default -- reduce for PD OFF, increase for PD ON"`
+	DipDaGain   float64           `desc:"strength of dopamine dips: 1 default -- reduce to siulate D2 agonists"`
 	Net         *pbwm.Network     `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
 	TrnEpcLog   *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
 	TstEpcLog   *etable.Table     `view:"no-inline" desc:"testing epoch-level log data"`
@@ -1877,10 +1880,15 @@ func (ss *Sim) SetParams(sheet string, setMsg bool) error {
 	matg := ss.Net.LayerByName("MatrixGo").(*pbwm.MatrixLayer)
 	matn := ss.Net.LayerByName("MatrixNoGo").(*pbwm.MatrixLayer)
 
-	matg.Matrix.BurstGain = ss.BurstDaGain
-	matg.Matrix.DipGain = ss.DipDaGain
-	matn.Matrix.BurstGain = ss.BurstDaGain
-	matn.Matrix.DipGain = ss.DipDaGain
+	matg.Matrix.BurstGain = float32(ss.BurstDaGain)
+	matg.Matrix.DipGain = float32(ss.DipDaGain)
+	matn.Matrix.BurstGain = float32(ss.BurstDaGain)
+	matn.Matrix.DipGain = float32(ss.DipDaGain)
+
+	//matg.Matrix.BurstGain = ss.BurstDaGain
+	//matg.Matrix.DipGain = ss.DipDaGain
+	//matn.Matrix.BurstGain = ss.BurstDaGain
+	//matn.Matrix.DipGain = ss.DipDaGain
 
 	return err
 }
@@ -2809,6 +2817,9 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TrainEnv.IgnoreTr, "TrainIgnoreTr", true, "whether we should have ignore trials.")
 	flag.BoolVar(&ss.TestEnv.IgnoreTr, "TestIgnoreTr", true, "whether we should have ignore trials.")
 	flag.IntVar(&ss.NumStimConst, "NumStimConst", ss.SirTask, "number of stimuli that model sees.")
+	flag.Float64Var(&ss.DipDaGain, "DipDaGain", 1, "DipDaGain")
+	flag.Float64Var(&ss.BurstDaGain, "BurstDaGain", 1, "BurstDaGain")
+
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
 	ss.Init()
@@ -2820,6 +2831,8 @@ func (ss *Sim) CmdArgs() {
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
 	fmt.Printf("denom: %v\n", ss.denom)
 	fmt.Printf("numstimconst: %v\n", ss.NumStimConst)
+	fmt.Printf("DipDaGain: %v\n", ss.DipDaGain)
+	fmt.Printf("BurstDaGain: %v\n", ss.BurstDaGain)
 	if ss.NumStimConst != ss.SirTask {
 		ss.TrainEnv.NumStimConst = ss.NumStimConst
 		ss.TestEnv.NumStimConst = ss.NumStimConst
