@@ -508,6 +508,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.StimType = "Cont"
 	ss.TestEnv.StimDist = "false" //will be defined in the tag
 	ss.TestEnv.MaxDist = 45
+	fmt.Printf(" max dist: %v", ss.TestEnv.MaxDist)
 	ss.TestEnv.MinDist = 0
 	ss.TestEnv.IgnoreTr = ss.IgnoreTr
 	ss.TestEnv.NumStimConst = ss.NumStimConst

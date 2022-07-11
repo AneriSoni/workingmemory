@@ -9,7 +9,6 @@ import (
 	"log"
 	"math"
 	"math/rand"
-	"os"
 
 	"github.com/emer/emergent/env"
 	"github.com/emer/etable/etensor"
@@ -255,7 +254,6 @@ func (ev *SIREnv) StepSIR() {
 
 			}
 		}
-		//fmt.Printf("%v", ev.Act)
 		break
 	}
 	//ev.Stim = rand.Intn(ev.NStim)
@@ -274,8 +272,8 @@ func (ev *SIREnv) StepSIR() {
 
 	if ev.StimDist == "true" {
 
-		fmt.Print("Stim Dist Not implemented for sir4")
-		os.Exit(1)
+		//fmt.Print("Stim Dist Not implemented for sir4")
+		//os.Exit(1)
 
 		dist_met := "false"
 
@@ -292,161 +290,274 @@ func (ev *SIREnv) StepSIR() {
 			if ev.Act == Recall3 {
 				dist_met = "true"
 			}
-
-			if ev.Act == Store1 && ev.Maint2 < 0 && ev.Maint3 < 0 { //current trial is store1 and there is nothing in stimulus 2,3
+			if ev.Act == Recall4 {
 				dist_met = "true"
 			}
 
-			if ev.Act == Store2 && ev.Maint1 < 0 && ev.Maint3 < 0 { //current trial is store2 and there is nothing in stimulus 1,3
-				dist_met = "true"
-			}
-
-			if ev.Act == Store3 && ev.Maint1 < 0 && ev.Maint2 < 0 { //current trial is store2 and there is nothing in stimulus 1,3
-				dist_met = "true"
-			}
-			if ev.Act == Store1 && ev.Maint2 >= 0 && ev.Maint3 < 0 { //if current trial is store1 and there is something already for stimulus 2, 3 empty
-
-				if math.Abs(ev.Maint2-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2-ev.Stim) > ev.MinDist {
+			if ev.Act == Store1 {
+				dist_met_ind := 0
+				if ev.Maint2 < 0 && ev.Maint3 < 0 && ev.Maint4 < 0 { //current trial is store1 and there is nothing in stimulus 2,3, 4
 					dist_met = "true"
 				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
+					if ev.Maint2 > 0 {
+						if math.Abs(ev.Maint2-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1 //the new stim is within the bounds
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
 
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 2
+					}
+					if ev.Maint3 > 0 {
+						if math.Abs(ev.Maint3-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint3-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 3
+					}
+					if ev.Maint4 > 0 {
+						if math.Abs(ev.Maint4-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint4-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 4
+					}
+					if dist_met_ind == 3 {
+						dist_met = "true"
 					}
 
 				}
 			}
 
-			if ev.Act == Store1 && ev.Maint2 < 0 && ev.Maint3 >= 0 { //if current trial is store1 and there is something already for stimulus 3, 2 empty
-
-				if math.Abs(ev.Maint3-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint3-ev.Stim) > ev.MinDist {
+			if ev.Act == Store2 {
+				if ev.Maint1 < 0 && ev.Maint3 < 0 && ev.Maint4 < 0 { //current trial is store2 and there is nothing in stimulus 1,3,4
 					dist_met = "true"
 				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
+					dist_met_ind := 0
+					if ev.Maint1 > 0 {
+						if math.Abs(ev.Maint1-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
 
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 1
+					}
+					if ev.Maint3 > 0 {
+						if math.Abs(ev.Maint3-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint3-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 3
+					}
+					if ev.Maint4 > 0 {
+						if math.Abs(ev.Maint4-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint4-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 4
+					}
+					if dist_met_ind == 3 {
+						dist_met = "true"
 					}
 
 				}
 			}
 
-			if ev.Act == Store1 && ev.Maint2 >= 0 && ev.Maint3 >= 0 { //if current trial is store1 and there is something already for stimulus 2 and 3
-
-				if math.Abs(ev.Maint2-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2-ev.Stim) > ev.MinDist && math.Abs(ev.Maint3-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint3-ev.Stim) > ev.MinDist {
+			if ev.Act == Store3 {
+				if ev.Maint1 < 0 && ev.Maint2 < 0 && ev.Maint4 < 0 { //current trial is store3 and there is nothing in stimulus 1,3, 4
 					dist_met = "true"
 				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
+					dist_met_ind := 0
+					if ev.Maint1 > 0 {
+						if math.Abs(ev.Maint1-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
 
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 1
+					}
+
+					if ev.Maint2 > 0 {
+						if math.Abs(ev.Maint2-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 2
+					}
+					if ev.Maint4 > 0 {
+						if math.Abs(ev.Maint4-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint4-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 4
+					}
+					if dist_met_ind == 3 {
+						dist_met = "true"
+					}
+
+				}
+			}
+			if ev.Act == Store4 {
+				if ev.Maint1 < 0 && ev.Maint2 < 0 && ev.Maint3 < 0 { //current trial is store4 and there is nothing in stimulus 1,2,3
+					dist_met = "true"
+				} else {
+					dist_met_ind := 0
+					if ev.Maint1 > 0 {
+						if math.Abs(ev.Maint1-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 1
+					}
+					if ev.Maint2 > 0 {
+						if math.Abs(ev.Maint2-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 2
+					}
+					if ev.Maint3 > 0 {
+						if math.Abs(ev.Maint3-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint3-ev.Stim) > ev.MinDist {
+							dist_met_ind = dist_met_ind + 1
+						} else {
+							if ev.StimType == "Cont" {
+								//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
+								ev.Stim = rand.Float64() * float64(360) //ring
+							}
+							if ev.StimType == "Fixed" {
+								ev.Stim = float64(rand.Intn(ev.NStim))
+
+							}
+
+						}
+
+					} else {
+						dist_met_ind = dist_met_ind + 1 //there is nothing for maint 3
+					}
+					if dist_met_ind == 3 {
+						dist_met = "true"
 					}
 
 				}
 			}
 
-			if ev.Act == Store2 && ev.Maint1 >= 0 && ev.Maint3 < 0 { //if current trial is store2 and there is something already for stimulus 1, empty 3
-				if math.Abs(ev.Maint1-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1-ev.Stim) > ev.MinDist {
-					dist_met = "true"
-				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
-
-					}
-
-				}
-			}
-
-			if ev.Act == Store2 && ev.Maint1 < 0 && ev.Maint3 >= 0 { //if current trial is store2 and there is something already for stimulus 3, empty 1
-				if math.Abs(ev.Maint3-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint3-ev.Stim) > ev.MinDist {
-					dist_met = "true"
-				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
-
-					}
-
-				}
-			}
-			if ev.Act == Store2 && ev.Maint1 >= 0 && ev.Maint3 >= 0 { //if current trial is store2 and there is something already for stimulus 1 and 3
-				if math.Abs(ev.Maint1-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1-ev.Stim) > ev.MinDist && math.Abs(ev.Maint3-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint3-ev.Stim) > ev.MinDist {
-					dist_met = "true"
-				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
-
-					}
-
-				}
-			}
-			if ev.Act == Store3 && ev.Maint1 >= 0 && ev.Maint2 < 0 { //if current trial is store3 and there is something already for stimulus 1, empty 2
-				if math.Abs(ev.Maint1-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1-ev.Stim) > ev.MinDist {
-					dist_met = "true"
-				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
-
-					}
-
-				}
-			}
-
-			if ev.Act == Store3 && ev.Maint1 < 0 && ev.Maint2 >= 0 { //if current trial is store3 and there is something already for stimulus 2, empty 1
-				if math.Abs(ev.Maint2-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2-ev.Stim) > ev.MinDist {
-					dist_met = "true"
-				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
-
-					}
-
-				}
-			}
-			if ev.Act == Store3 && ev.Maint1 >= 0 && ev.Maint2 >= 0 { //if current trial is store3 and there is something already for stimulus 1 and 2
-				if math.Abs(ev.Maint1-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint1-ev.Stim) > ev.MinDist && math.Abs(ev.Maint2-ev.Stim) < ev.MaxDist && math.Abs(ev.Maint2-ev.Stim) > ev.MinDist {
-					dist_met = "true"
-				} else {
-					if ev.StimType == "Cont" {
-						//ev.Stim = 0.4+rand.Float64()*float64(3) //no ring
-						ev.Stim = rand.Float64() * float64(360) //ring
-					}
-					if ev.StimType == "Fixed" {
-						ev.Stim = float64(rand.Intn(ev.NStim))
-
-					}
-
-				}
-			}
 		}
 	}
 
