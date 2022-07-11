@@ -508,7 +508,6 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.StimType = "Cont"
 	ss.TestEnv.StimDist = "false" //will be defined in the tag
 	ss.TestEnv.MaxDist = 45
-	fmt.Printf(" max dist: %v", ss.TestEnv.MaxDist)
 	ss.TestEnv.MinDist = 0
 	ss.TestEnv.IgnoreTr = ss.IgnoreTr
 	ss.TestEnv.NumStimConst = ss.NumStimConst
@@ -2810,7 +2809,9 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Experiment, "experiment", "", "experiment name")
 	flag.IntVar(&ss.NumModels, "NumModels", 5, "number of models to run")
 	flag.StringVar(&ss.TrainEnv.StimDist, "TrainStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for train")
+	flag.Float64Var(&ss.TrainEnv.MaxDist, "TrainMaxDist", 45, "the maximum distance between stimuli, for training")
 	flag.StringVar(&ss.TestEnv.StimDist, "TestStimDist", "false", "restrict whether or  not we choose narrow stim, should be true or false, for test")
+	flag.Float64Var(&ss.TestEnv.MaxDist, "TestMaxDist", 45, "the maximum distance between stimuli, for testing")
 	flag.StringVar(&ss.RewardFunction, "RewardFunction", "unitdifference", "reward function either unitdifference or decoded")
 	flag.StringVar(&ss.RewardType, "RewardType", "", "reward function either continuous or based on threshold")
 	flag.Float64Var(&ss.denom, "denom", 20.0, "denom for cont exp reward function")
@@ -2834,6 +2835,7 @@ func (ss *Sim) CmdArgs() {
 	fmt.Printf("numstimconst: %v\n", ss.NumStimConst)
 	fmt.Printf("DipDaGain: %v\n", ss.DipDaGain)
 	fmt.Printf("BurstDaGain: %v\n", ss.BurstDaGain)
+	fmt.Printf("stim dist %v, max %v\n", ss.TestEnv.StimDist, ss.TestEnv.MaxDist)
 	if ss.NumStimConst != ss.SirTask {
 		ss.TrainEnv.NumStimConst = ss.NumStimConst
 		ss.TestEnv.NumStimConst = ss.NumStimConst
