@@ -47,7 +47,8 @@ func main() {
 	TheSim.New()
 	TheSim.Config()
 
-	//TheSim.CmdArgs() //runs the no gui version.
+	//TheSim.CmdArgs() //runs the no gui version. //need to comment out.
+
 	if len(os.Args) > 1 {
 		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
@@ -55,6 +56,7 @@ func main() {
 			guirun()
 		})
 	}
+
 }
 
 func guirun() {
@@ -2935,6 +2937,35 @@ func (ss *Sim) CmdArgs() {
 
 			ss.RunTestAll()
 			ss.NeedsNewRun = true
+		}
+
+	} else if ss.Experiment == "MultTest" {
+		for _, v := range models {
+			if ss.chunklay == true {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "chunkhybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			} else {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			}
+
+			//fmt.Printf(ss.Tag)
+			//ss.TrainRun()
+
+			//testing all stimuli
+			ss.RunTestAll()
+
+			//testing stimuli with max dist 90
+			ss.Folder = ss.Folder + "Test90/"
+			ss.TestEnv.MaxDist = 90
+			ss.TestEnv.StimDist = "true"
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "Test90/", "", 1)
+
+			//testing stimuli with max dist 45
+			ss.Folder = ss.Folder + "Test45/"
+			ss.TestEnv.MaxDist = 45
+			ss.TestEnv.StimDist = "true"
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "Test45/", "", 1)
 		}
 
 	} else {
