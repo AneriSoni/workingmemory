@@ -2947,8 +2947,8 @@ func (ss *Sim) CmdArgs() {
 				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
 			}
 
-			//fmt.Printf(ss.Tag)
-			//ss.TrainRun()
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
 
 			//testing all stimuli
 			ss.RunTestAll()
