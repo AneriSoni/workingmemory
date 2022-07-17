@@ -2951,6 +2951,7 @@ func (ss *Sim) CmdArgs() {
 			ss.TrainRun()
 
 			//testing all stimuli
+			ss.TestEnv.StimDist = "false"
 			ss.RunTestAll()
 
 			//testing stimuli with max dist 90
