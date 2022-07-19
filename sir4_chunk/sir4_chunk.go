@@ -665,8 +665,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("FmPFCOutD")
 	//pj = net.ConnectLayers(pfcOutD, out, full, emer.Forward)
 	pj = net.ConnectLayers(pfcOutD, out, fmin2, emer.Forward)
-	pj.SetClass("PFCOutDOutput")
-	//pj.SetClass("FmPFCOutD") //fixed variance 
+	//pj.SetClass("PFCOutDOutput")
+	pj.SetClass("FmPFCOutD") //fixed variance 
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
 	if ss.chunklay == true {
