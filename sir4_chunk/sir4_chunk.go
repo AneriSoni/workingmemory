@@ -259,6 +259,12 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Sym":  "false",
 					"Prjn.WtScale.Rel": "3.5",
 				}},
+			{Sel: ".PFCOutDOutput", Desc: "PFC OutD -> Output",
+				Params: params.Params{
+					"Prjn.WtInit.Mean": "0.5",
+					"Prjn.WtInit.Var":  "0",
+					"Prjn.WtScale.Abs": "4",
+				}},
 			//{Sel: "#ChunkToOutput", Desc: "Chunk to Output, weaker", //only for checking chunking
 			//	Params: params.Params{//only for checking chunking
 			//		"Prjn.WtScale.Rel": "0.5",//only for checking chunking
@@ -659,7 +665,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("FmPFCOutD")
 	//pj = net.ConnectLayers(pfcOutD, out, full, emer.Forward)
 	pj = net.ConnectLayers(pfcOutD, out, fmin2, emer.Forward)
-	pj.SetClass("FmPFCOutD")
+	pj.SetClass("PFCOutDOutput")
+	//pj.SetClass("FmPFCOutD") //fixed variance 
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
 	if ss.chunklay == true {
