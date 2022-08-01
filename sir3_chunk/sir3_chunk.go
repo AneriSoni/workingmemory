@@ -338,6 +338,8 @@ type Sim struct {
 	IgnoreTr     bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
 	NumStimConst int  `desc: "tells how many stimuli the model will get to see "`
 
+	NoGo float64 `desc: "the gate value, NoGo "`
+
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
 	TrlRewPred    float64 `inactive:"+" desc:"reward prediction level on this trial"`
@@ -2854,6 +2856,7 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.NumStimConst, "NumStimConst", ss.SirTask, "number of stimuli that model sees.")
 	flag.Float64Var(&ss.DipDaGain, "DipDaGain", 1, "DipDaGain")
 	flag.Float64Var(&ss.BurstDaGain, "BurstDaGain", 1, "BurstDaGain")
+	flag.Float64Var(&ss.NoGo, "NoGo", 1.25, "Gate No Go")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
@@ -2874,6 +2877,14 @@ func (ss *Sim) CmdArgs() {
 		ss.TestEnv.NumStimConst = ss.NumStimConst
 
 	}
+
+	gpi := ss.Net.LayerByName("GPiThal").(*pbwm.GPiThalLayer)
+	if gpi.Gate.NoGo != float32(ss.NoGo) {
+		gpi.Gate.NoGo = float32(ss.NoGo)
+
+	}
+	fmt.Printf("No GO: %v\n", gpi.Gate.NoGo)
+
 	//fmt.Printf(ss.RunLocation)
 	//fmt.Printf("%v \n", ss.TrainEnv.IgnoreTr)
 	//fmt.Printf("%v \n", ss.TestEnv.IgnoreTr)
