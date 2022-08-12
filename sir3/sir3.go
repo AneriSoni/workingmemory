@@ -3010,6 +3010,89 @@ func (ss *Sim) CmdArgs() {
 			ss.RunTestAll()
 			ss.Folder = strings.Replace(ss.Folder, "Test45/", "", 1)
 		}
+	} else if ss.Experiment == "MultTestNoGo" {
+		for _, v := range models {
+			if ss.chunklay == true {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "chunkhybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			} else {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			}
+
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+
+			//testing NoGo 0.5
+			ss.Folder = ss.Folder + "TestNoGo05/"
+			gpi.Gate.NoGo = 0.5
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo05/", "", 1)
+
+			//testing NoGo 0.6
+			ss.Folder = ss.Folder + "TestNoGo06/"
+			gpi.Gate.NoGo = 0.6
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo06/", "", 1)
+
+			//testing NoGo 0.7
+			ss.Folder = ss.Folder + "TestNoGo07/"
+			gpi.Gate.NoGo = 0.7
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo07/", "", 1)
+
+			//testing NoGo 0.8
+			ss.Folder = ss.Folder + "TestNoGo08/"
+			gpi.Gate.NoGo = 0.8
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo08/", "", 1)
+
+			//testing NoGo 0.9
+			ss.Folder = ss.Folder + "TestNoGo09/"
+			gpi.Gate.NoGo = 0.9
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo09/", "", 1)
+
+			//testing NoGo 1.0
+			ss.Folder = ss.Folder + "TestNoGo1/"
+			gpi.Gate.NoGo = 1.0
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo1/", "", 1)
+
+			//testing NoGo 1.1
+			ss.Folder = ss.Folder + "TestNoGo11/"
+			gpi.Gate.NoGo = 1.1
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo11/", "", 1)
+
+			//testing NoGo 1.2
+			ss.Folder = ss.Folder + "TestNoGo12/"
+			gpi.Gate.NoGo = 1.2
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo12/", "", 1)
+
+			//testing NoGo 1.3
+			ss.Folder = ss.Folder + "TestNoGo13/"
+			gpi.Gate.NoGo = 1.3
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo13/", "", 1)
+
+			//testing NoGo 1.4
+			ss.Folder = ss.Folder + "TestNoGo14/"
+			gpi.Gate.NoGo = 1.4
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo14/", "", 1)
+
+			//testing NoGo 1.5
+			ss.Folder = ss.Folder + "TestNoGo15/"
+			gpi.Gate.NoGo = 1.5
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo15/", "", 1)
+
+			//testing NoGo 1.6
+			ss.Folder = ss.Folder + "TestNoGo16/"
+			gpi.Gate.NoGo = 1.6
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo16/", "", 1)
+		}
 
 	} else {
 

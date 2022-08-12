@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-
+import random
 
 
 
@@ -277,8 +277,7 @@ class Precision():
         ##df = pd.read_csv(file)
         #self.df = df
         self.stim = stim
-        
-    def get_diffs(self,df):
+    def get_diffs(self,df, nonresponse):
         df_include= []
         for i in df['$TrialName']:
             if 'Recall' in i:
@@ -293,12 +292,65 @@ class Precision():
         target = df['#OutTarget']
         decodeout_recall = df_recall['#OutDecode']
         target_recall = df_recall['#OutTarget']
+        
+        
+        if nonresponse == 'guess':
+            use_decodeout = []
+            use_decodeout_recall = []
+            
+            for i in range(len(decodeout)):
+                if decodeout.values[i] == 0:
+                    use_decodeout.append(np.random.uniform(0,360))
+                else:
+                    use_decodeout.append(decodeout.values[i])
+                    
+            for i in range(len(decodeout_recall)):
+                if decodeout_recall.values[i] == 0:
+                    use_decodeout_recall.append(np.random.uniform(0,360))
+                else:
+                    use_decodeout_recall.append(decodeout_recall.values[i])
+        if nonresponse == 'swap':
+            stripes = [i for i in df.keys() if 'stripe' in i] #find the stripe names
+
+            use_decodeout = [] #the new output for all trials
+            use_decodeout_recall = [] #the new output for recall 
+
+            for i in range(len(decodeout)):
+                if decodeout.values[i] == 0:
+                    stripe_value = []
+                    for s in stripes: #need the original df
+                        if df[s].values[i] != 0:
+                            stripe_value.append(df[s].values[i])
+                    if len(stripe_value)== 0:
+                        use_decodeout.append(np.random.uniform(0,360))
+                    else:
+                        use_decodeout.append(random.choice(stripe_value))
+                else:
+                    use_decodeout.append(decodeout.values[i])
+            
+            for i in range(len(decodeout_recall)):
+                if decodeout_recall.values[i] == 0:
+                    stripe_value = []
+                    for s in stripes: #need the original df
+                        if df_recall[s].values[i] != 0:
+                            stripe_value.append(df_recall[s].values[i])
+                    if len(stripe_value)== 0:
+                        use_decodeout_recall.append(np.random.uniform(0,360))
+                    else:
+                        use_decodeout_recall.append(random.choice(stripe_value)) #random guess from what is in memory. 
+                else:
+                    use_decodeout_recall.append(decodeout_recall.values[i])
+            
+        else: 
+            use_decodeout = decodeout
+            use_decodeout_recall = decodeout_recall
+            
 
         stim_diff = (self.stim[1]-self.stim[0])/2
-        diff =np.array(decodeout)-np.array(target)
+        diff =np.array(use_decodeout)-np.array(target)
         self.alldiff = diff
         
-        diffrecall =np.array(decodeout_recall)-np.array(target_recall)
+        diffrecall =np.array(use_decodeout_recall)-np.array(target_recall)
         #diffrecall = np.abs(diffrecall) #this is wrong wrong wrong....uncomment this (comment out the below line) and plot for reason why. 
         #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version, wrong mod factor
         diffrecall = (np.mod(diffrecall+stim_diff, self.stim[1])-stim_diff)
@@ -308,16 +360,59 @@ class Precision():
         self.recalldiff = diffrecall
         return diff,diffrecall
     
-    def mult_models(self,files,sep = '\s+'):
+    def mult_models(self,files,sep = '\s+', nonresponse = 'none'):
         #this is for plotting error histogram when you have multiple models and want them plotted in one graph 
+        #nonresponse is to deal with all the times the model guessing nothing (i.e. it has 0 value)
+        #if none - leave as is, if 'guess' then replace with random uniform guess, if 'swap' will replace with the other value
         dat = pd.DataFrame()
         for f in files:
             dat = dat.append(pd.read_csv(f,sep=sep))
         self.dat = dat
 
-        _,diffrecall = self.get_diffs(dat)
+        _,diffrecall = self.get_diffs(dat, nonresponse = nonresponse)
         self.diffrecall = diffrecall
         return diffrecall
+        
+#     def get_diffs(self,df):
+#         df_include= []
+#         for i in df['$TrialName']:
+#             if 'Recall' in i:
+#                 df_include.append('True')
+#             else:
+#                 df_include.append('False')
+#         df.index = df_include
+#         df_recall = df.loc['True']
+#         self.df_recall = df_recall
+#         #pull out target and actual decoded output for recall and all trials
+#         decodeout = df['#OutDecode']
+#         target = df['#OutTarget']
+#         decodeout_recall = df_recall['#OutDecode']
+#         target_recall = df_recall['#OutTarget']
+
+#         stim_diff = (self.stim[1]-self.stim[0])/2
+#         diff =np.array(decodeout)-np.array(target)
+#         self.alldiff = diff
+        
+#         diffrecall =np.array(decodeout_recall)-np.array(target_recall)
+#         #diffrecall = np.abs(diffrecall) #this is wrong wrong wrong....uncomment this (comment out the below line) and plot for reason why. 
+#         #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version, wrong mod factor
+#         diffrecall = (np.mod(diffrecall+stim_diff, self.stim[1])-stim_diff)
+#         #diffrecall = np.mod(diffrecall, stim_diff)  #this is wrong because the errors are from 0 to 360 instead of centered at 0.
+        
+#         #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2)/stim_diff*360 #degrees
+#         self.recalldiff = diffrecall
+#         return diff,diffrecall
+    
+#     def mult_models(self,files,sep = '\s+'):
+#         #this is for plotting error histogram when you have multiple models and want them plotted in one graph 
+#         dat = pd.DataFrame()
+#         for f in files:
+#             dat = dat.append(pd.read_csv(f,sep=sep))
+#         self.dat = dat
+
+#         _,diffrecall = self.get_diffs(dat)
+#         self.diffrecall = diffrecall
+#         return diffrecall
     
     def err_recall_type(self, file, sep = '\t'):
         #this only makes sense on a model by model basis - only one model at a time - because one model could learn for recall 1 and another
