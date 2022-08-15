@@ -295,6 +295,7 @@ class Precision():
         
         
         if nonresponse == 'guess':
+            num_nonresponse = 0
             use_decodeout = []
             use_decodeout_recall = []
             
@@ -306,10 +307,14 @@ class Precision():
                     
             for i in range(len(decodeout_recall)):
                 if decodeout_recall.values[i] == 0:
+                    num_nonresponse+=1
                     use_decodeout_recall.append(np.random.uniform(0,360))
                 else:
                     use_decodeout_recall.append(decodeout_recall.values[i])
+            self.num_nonresponse = num_nonresponse
+            self.total_length = len(use_decodeout_recall)
         if nonresponse == 'swap':
+            num_nonresponse = 0
             stripes = [i for i in df.keys() if 'stripe' in i] #find the stripe names
 
             use_decodeout = [] #the new output for all trials
@@ -330,6 +335,7 @@ class Precision():
             
             for i in range(len(decodeout_recall)):
                 if decodeout_recall.values[i] == 0:
+                    num_nonresponse+=1
                     stripe_value = []
                     for s in stripes: #need the original df
                         if df_recall[s].values[i] != 0:
@@ -340,6 +346,8 @@ class Precision():
                         use_decodeout_recall.append(random.choice(stripe_value)) #random guess from what is in memory. 
                 else:
                     use_decodeout_recall.append(decodeout_recall.values[i])
+            self.num_nonresponse = num_nonresponse
+            self.total_length = len(use_decodeout_recall)
             
         else: 
             use_decodeout = decodeout
