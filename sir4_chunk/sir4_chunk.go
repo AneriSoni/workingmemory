@@ -1384,6 +1384,9 @@ func (ss *Sim) ApplyReward(train bool) {
 		}
 
 	}
+	if outdecode == 0 {
+		en.Reward.Values[0] = float64(0)
+	}
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(leabra.LeabraLayer).AsLeabra()
 	ly.ApplyExt1DTsr(pats)
