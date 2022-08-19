@@ -173,7 +173,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Fixed": "true",
 					"Layer.Act.Dt.GTau":        "3",
 					"Layer.Gate.GeGain":        "3",
-					"Layer.Gate.NoGo":          "1.25", // was 1 default
+					"Layer.Gate.NoGo":          "0.5",  // was 1 default
 					"Layer.Gate.Thr":           "0.25", // .2 default
 				}},
 			{Sel: "#GPeNoGo", Desc: "GPe is a regular layer -- needs special params",
@@ -485,7 +485,7 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxTrls = 100
 	}
 
-	ss.IgnoreTr = true //need to change back to false
+	ss.IgnoreTr = false //need to change back to false
 
 	ss.SirTask = 3
 	ss.chunklay = false
@@ -1356,9 +1356,11 @@ func (ss *Sim) ApplyReward(train bool) {
 		decodeddiff := float64(outdecode - outdecode2)
 		stim_diff := float64(360)
 		stim_diff_shift := float64(180)
-		stim_diff_half := float64(180) //the stim can range from 0 to 360. and (360-0)/2 - 180
+		stim_diff_half := float64(180) //the stim can range from 0 to 360. and (360-0)/2 is 180
 		//stim_diff_shift := float64(90) //this is the shifting factor.
-		decodeddiff_final := math.Mod(decodeddiff+stim_diff_shift, stim_diff) - stim_diff_shift
+		decodeddiff_final := math.Abs(math.Mod(decodeddiff+stim_diff_shift, stim_diff)) - stim_diff_shift //math.mod takes the original sign.
+		//fmt.Printf("decodeddiff, %v",decodeddiff)
+		//fmt.Printf("decodeddiff_final, %v",decodeddiff_final)
 
 		if ss.RewardType == "contlinear" {
 			en.SetRewardCont(math.Abs(decodeddiff_final), stim_diff_half)
