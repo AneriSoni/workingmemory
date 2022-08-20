@@ -368,7 +368,7 @@ class Precision():
         self.recalldiff = diffrecall
         return diff,diffrecall
     
-    def mult_models(self,files,sep = '\s+', nonresponse = 'none'):
+    def mult_models(self,files,sep = '\s+', nonresponse = 'guess'):
         #this is for plotting error histogram when you have multiple models and want them plotted in one graph 
         #nonresponse is to deal with all the times the model guessing nothing (i.e. it has 0 value)
         #if none - leave as is, if 'guess' then replace with random uniform guess, if 'swap' will replace with the other value
