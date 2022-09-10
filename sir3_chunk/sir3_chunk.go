@@ -337,6 +337,7 @@ type Sim struct {
 
 	IgnoreTr     bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
 	NumStimConst int  `desc: "tells how many stimuli the model will get to see "`
+	OneR         bool `desc: "this is the version for when there is only 1 recall unit and then we will re-stimulate the store unit. "`
 
 	NoGo float64 `desc: "the gate value, NoGo "`
 
@@ -491,6 +492,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.chunklay = true
 	ss.NumStimConst = ss.SirTask
 	//fmt.Printf("Numconst: %v ;", ss.NumStimConst)
+	ss.OneR = true //this makes it so that there is one recall type.
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
@@ -506,6 +508,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.MinDist = 0
 	ss.TrainEnv.IgnoreTr = ss.IgnoreTr
 	ss.TrainEnv.NumStimConst = ss.NumStimConst
+	ss.TrainEnv.OneR = ss.OneR
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
@@ -521,6 +524,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.MinDist = 0
 	ss.TestEnv.IgnoreTr = ss.IgnoreTr
 	ss.TestEnv.NumStimConst = ss.NumStimConst
+	ss.TestEnv.OneR = ss.OneR
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
@@ -550,19 +554,35 @@ func (ss *Sim) ConfigEnv() {
 		//if len(ss.TrainEnv.CtrlInput.Values) == 5 {
 		if ss.SirTask == 2 {
 			ss.StimStripe[i] = make([]float64, 2) //this is sir2 so 2 store types
-			ss.Acts = 5
+
+			if ss.OneR {
+				ss.Acts = 4
+
+			} else {
+				ss.Acts = 5
+			}
 		}
 
 		//if len(ss.TrainEnv.CtrlInput.Values) == 7 {
 		if ss.SirTask == 3 {
-			ss.StimStripe[i] = make([]float64, 3) //this is sir3 so 3 store typess
-			ss.Acts = 7
+			ss.StimStripe[i] = make([]float64, 3) //this is sir3 so 3 store types
+			if ss.OneR {
+				ss.Acts = 5
+
+			} else {
+				ss.Acts = 7
+			}
 		}
 
 		//if len(ss.TrainEnv.CtrlInput.Values) == 9 {
 		if ss.SirTask == 4 {
-			ss.StimStripe[i] = make([]float64, 4) //this is sir3 so 3 store typess
-			ss.Acts = 9
+			ss.StimStripe[i] = make([]float64, 4) //this is sir3 so 4 store types
+			if ss.OneR {
+				ss.Acts = 6
+
+			} else {
+				ss.Acts = 9
+			}
 		}
 	}
 
@@ -1359,6 +1379,7 @@ func (ss *Sim) ApplyReward(train bool) {
 		stim_diff_half := float64(180) //the stim can range from 0 to 360. and (360-0)/2 is 180
 		//stim_diff_shift := float64(90) //this is the shifting factor.
 		decodeddiff_final := math.Abs(math.Mod(decodeddiff+stim_diff_shift, stim_diff)) - stim_diff_shift //math.mod takes the original sign.
+		//decodeddiff_final := math.Mod(decodeddiff+stim_diff_shift, stim_diff) - stim_diff_shift
 		//fmt.Printf("decodeddiff, %v",decodeddiff)
 		//fmt.Printf("decodeddiff_final, %v",decodeddiff_final)
 
@@ -1384,12 +1405,14 @@ func (ss *Sim) ApplyReward(train bool) {
 		}
 
 	}
+	//The 3 lines of code below allow no reward during non-responses
 	if outdecode == 0 {
 		en.Reward.Values[0] = float64(0)
 	}
 	pats := en.State("Reward")
 	ly := ss.Net.LayerByName("Rew").(leabra.LeabraLayer).AsLeabra()
 	ly.ApplyExt1DTsr(pats)
+	//fmt.Printf("pats for rew layer,%v", pats)
 }
 
 // TrainTrial runs one trial of training using TrainEnv

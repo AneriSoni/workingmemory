@@ -66,7 +66,8 @@ type SIREnv struct {
 
 	IgnoreTr bool `desc:"decides if we want to have ignore trials or not"`
 
-	NumStimConst int `desc:"decides how many items the task should be trained on. "`
+	NumStimConst int  `desc:"decides how many items the task should be trained on. "`
+	OneR         bool `desc:" if this is true, then there is only 1 R and we reactivate the corresponding store unit. "`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -76,7 +77,11 @@ func (ev *SIREnv) Desc() string { return ev.Dsc }
 func (ev *SIREnv) SetNStim(n int) {
 	ev.NStim = n
 	ev.Input.SetShape([]int{n}, nil, []string{"N"})
-	ev.CtrlInput.SetShape([]int{int(ActionsN)}, nil, []string{"N"})
+	if ev.OneR {
+		ev.CtrlInput.SetShape([]int{int(6)}, nil, []string{"N"})
+	} else {
+		ev.CtrlInput.SetShape([]int{int(ActionsN)}, nil, []string{"N"})
+	}
 	ev.Output.SetShape([]int{n}, nil, []string{"N"})
 	ev.Reward.SetShape([]int{1}, nil, []string{"1"})
 	if ev.RewVal == 0 {
@@ -140,7 +145,28 @@ func (ev *SIREnv) Init(run int) {
 // SetState sets the input, output states
 func (ev *SIREnv) SetState() {
 	ev.CtrlInput.SetZeros()
-	ev.CtrlInput.Values[ev.Act] = 1
+	if ev.Act != Recall1 && ev.Act != Recall2 && ev.Act != Recall3 && ev.Act != Recall4 {
+		ev.CtrlInput.Values[ev.Act] = 1 // S1, S2, S3, S4, or Ignore gets activated
+	} else {
+		if ev.OneR { //R gets activated along with the ORIGINAL store ctrl input value
+			ev.CtrlInput.Values[5] = 1 //Activates the R
+			if ev.Act == Recall1 {
+				ev.CtrlInput.Values[0] = 1 //re-activates S1
+			}
+			if ev.Act == Recall2 {
+				ev.CtrlInput.Values[1] = 1 //re-activates S1
+			}
+			if ev.Act == Recall3 {
+				ev.CtrlInput.Values[2] = 1 //re-activates S1
+			}
+			if ev.Act == Recall4 {
+				ev.CtrlInput.Values[3] = 1 //re-activates S1
+			}
+		} else {
+			ev.CtrlInput.Values[ev.Act] = 1 // R1, R2, R3, or R4 gets activated
+		}
+
+	}
 	ev.Input.SetZeros()
 	if ev.Act != Recall1 && ev.Act != Recall2 && ev.Act != Recall3 && ev.Act != Recall4 {
 		//ev.Input.Values[ev.Stim] = 1
