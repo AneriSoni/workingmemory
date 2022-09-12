@@ -145,7 +145,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.Learn.Lrate":         "0.04", // .04 > .1 > .02
 					"Prjn.WtInit.Var":          "0.1",
-					"Prjn.Trace.GateNoGoPosLR": "1",    // 0.1 default
+					"Prjn.Trace.GateNoGoPosLR": "0.1",  // 0.1 default //was 1.0
 					"Prjn.Trace.NotGatedLR":    "0.7",  // 0.7 default
 					"Prjn.Trace.Decay":         "1.0",  // 1.0 default
 					"Prjn.Trace.AChDecay":      "0.0",  // not useful even at .1, surprising..
@@ -157,10 +157,10 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.Gi":     "2.2", // 2.2 > 1.8 > 2.4
 					"Layer.Inhib.Layer.FB":     "1",   // 1 > .5
 					"Layer.Inhib.Pool.On":      "true",
-					"Layer.Inhib.Pool.Gi":      "2.1", // def 1.9
+					"Layer.Inhib.Pool.Gi":      "1.9", // def 1.9 //was 2.1
 					"Layer.Inhib.Pool.FB":      "0",
 					"Layer.Inhib.Self.On":      "true",
-					"Layer.Inhib.Self.Gi":      "0.4", // def 0.3
+					"Layer.Inhib.Self.Gi":      "0.3", // def 0.3 // was 0.4
 					"Layer.Inhib.ActAvg.Init":  "0.05",
 					"Layer.Inhib.ActAvg.Fixed": "true",
 				}},
