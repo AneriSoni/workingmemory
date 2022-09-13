@@ -163,6 +163,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Self.Gi":      "0.3", // def 0.3 // was 0.4
 					"Layer.Inhib.ActAvg.Init":  "0.05",
 					"Layer.Inhib.ActAvg.Fixed": "true",
+					"Layer.Act.Noise.Type":     "VmNoise",
+					"Layer.Act.Noise.Mean":     "0.1",
 				}},
 			{Sel: "#GPiThal", Desc: "defaults also set automatically by layer but included here just to be sure",
 				Params: params.Params{
