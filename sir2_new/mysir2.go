@@ -165,6 +165,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Fixed": "true",
 					"Layer.Act.Noise.Type":     "VmNoise",
 					"Layer.Act.Noise.Mean":     "0.1",
+					"Layer.Act.Noise.Var":     "0.1",
+					"Layer.Act.Noise.Fixed":     "false",	
 				}},
 			{Sel: "#GPiThal", Desc: "defaults also set automatically by layer but included here just to be sure",
 				Params: params.Params{
