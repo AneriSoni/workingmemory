@@ -165,8 +165,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Fixed": "true",
 					"Layer.Act.Noise.Type":     "VmNoise",
 					"Layer.Act.Noise.Mean":     "0.1",
-					"Layer.Act.Noise.Var":     "0.1",
-					"Layer.Act.Noise.Fixed":     "false",	
+					"Layer.Act.Noise.Var":      "0.1",
+					"Layer.Act.Noise.Fixed":    "false",
 				}},
 			{Sel: "#GPiThal", Desc: "defaults also set automatically by layer but included here just to be sure",
 				Params: params.Params{
@@ -373,6 +373,7 @@ type Sim struct {
 	Experiment    string  `inactive:"+" desc:"type of experiment to run"`
 	NumModels     int     `inactive:"+" desc:"number of models to run"`
 	RunLocation   string  `inactive:"+" desc:"location run, determines file save location"`
+	arrayscale    bool    `inactive:"+" desc:"tells if we need to do any scaling because of job arrays"`
 
 	TrlDecodedDiff    float64 `inactive:"+" desc:"current trial's error based on the difference between decoded targ and decoded actm"`
 	SumTrlDecodedDiff float64 `inactive:"+" desc:"sum over the trial's error"`
@@ -2886,6 +2887,7 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TrainEnv.IgnoreTr, "TrainIgnoreTr", true, "whether we should have ignore trials.")
 	flag.BoolVar(&ss.TestEnv.IgnoreTr, "TestIgnoreTr", true, "whether we should have ignore trials.")
 	flag.IntVar(&ss.NumStimConst, "NumStimConst", ss.SirTask, "number of stimuli that model sees.")
+	flag.BoolVar(&ss.arrayscale, "arrayscale", false, "if running job arrays, some scaling needs to be applied, so this will do that")
 	flag.Float64Var(&ss.DipDaGain, "DipDaGain", 1, "DipDaGain")
 	flag.Float64Var(&ss.BurstDaGain, "BurstDaGain", 1, "BurstDaGain")
 	flag.Float64Var(&ss.NoGo, "NoGo", 1.25, "Gate No Go")
@@ -2901,6 +2903,11 @@ func (ss *Sim) CmdArgs() {
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
 	fmt.Printf("denom: %v\n", ss.denom)
 	fmt.Printf("numstimconst: %v\n", ss.NumStimConst)
+	if ss.arrayscale {
+		ss.BurstDaGain = ss.BurstDaGain / 10
+		ss.DipDaGain = ss.DipDaGain / 10
+
+	}
 	fmt.Printf("DipDaGain: %v\n", ss.DipDaGain)
 	fmt.Printf("BurstDaGain: %v\n", ss.BurstDaGain)
 	fmt.Printf("stim dist %v, max %v\n", ss.TestEnv.StimDist, ss.TestEnv.MaxDist)
@@ -3052,6 +3059,23 @@ func (ss *Sim) CmdArgs() {
 
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
+			//testing NoGo 0.8
+			ss.Folder = ss.Folder + "TestNoGo08/"
+			gpi.Gate.NoGo = 0.8
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo08/", "", 1)
+
+			//testing NoGo 1.25
+			ss.Folder = ss.Folder + "TestNoGo125/"
+			gpi.Gate.NoGo = 1.25
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo125/", "", 1)
+
+			//testing NoGo 1.6
+			ss.Folder = ss.Folder + "TestNoGo16/"
+			gpi.Gate.NoGo = 1.6
+			ss.RunTestAll()
+			ss.Folder = strings.Replace(ss.Folder, "TestNoGo16/", "", 1)
 
 			// //testing NoGo 1.7
 			// ss.Folder = ss.Folder + "TestNoGo17/"
@@ -3119,78 +3143,81 @@ func (ss *Sim) CmdArgs() {
 			// ss.RunTestAll()
 			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo4/", "", 1)
 
-			//testing NoGo 0.5
-			ss.Folder = ss.Folder + "TestNoGo05/"
-			gpi.Gate.NoGo = 0.5
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo05/", "", 1)
+			// //testing NoGo 0.5
+			// ss.Folder = ss.Folder + "TestNoGo05/"
+			// gpi.Gate.NoGo = 0.5
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo05/", "", 1)
 
-			//testing NoGo 0.6
-			ss.Folder = ss.Folder + "TestNoGo06/"
-			gpi.Gate.NoGo = 0.6
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo06/", "", 1)
+			// //testing NoGo 0.6
+			// ss.Folder = ss.Folder + "TestNoGo06/"
+			// gpi.Gate.NoGo = 0.6
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo06/", "", 1)
 
-			//testing NoGo 0.7
-			ss.Folder = ss.Folder + "TestNoGo07/"
-			gpi.Gate.NoGo = 0.7
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo07/", "", 1)
+			// //testing NoGo 0.7
+			// ss.Folder = ss.Folder + "TestNoGo07/"
+			// gpi.Gate.NoGo = 0.7
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo07/", "", 1)
 
-			//testing NoGo 0.8
-			ss.Folder = ss.Folder + "TestNoGo08/"
-			gpi.Gate.NoGo = 0.8
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo08/", "", 1)
+			// //testing NoGo 0.8
+			// ss.Folder = ss.Folder + "TestNoGo08/"
+			// gpi.Gate.NoGo = 0.8
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo08/", "", 1)
 
-			//testing NoGo 0.9
-			ss.Folder = ss.Folder + "TestNoGo09/"
-			gpi.Gate.NoGo = 0.9
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo09/", "", 1)
+			// //testing NoGo 0.9
+			// ss.Folder = ss.Folder + "TestNoGo09/"
+			// gpi.Gate.NoGo = 0.9
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo09/", "", 1)
 
-			//testing NoGo 1.0
-			ss.Folder = ss.Folder + "TestNoGo1/"
-			gpi.Gate.NoGo = 1.0
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo1/", "", 1)
+			// //testing NoGo 1.0
+			// ss.Folder = ss.Folder + "TestNoGo1/"
+			// gpi.Gate.NoGo = 1.0
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo1/", "", 1)
 
-			//testing NoGo 1.1
-			ss.Folder = ss.Folder + "TestNoGo11/"
-			gpi.Gate.NoGo = 1.1
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo11/", "", 1)
+			// //testing NoGo 1.1
+			// ss.Folder = ss.Folder + "TestNoGo11/"
+			// gpi.Gate.NoGo = 1.1
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo11/", "", 1)
 
-			//testing NoGo 1.2
-			ss.Folder = ss.Folder + "TestNoGo12/"
-			gpi.Gate.NoGo = 1.2
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo12/", "", 1)
+			// //testing NoGo 1.2
+			// ss.Folder = ss.Folder + "TestNoGo12/"
+			// gpi.Gate.NoGo = 1.2
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo12/", "", 1)
 
-			//testing NoGo 1.3
-			ss.Folder = ss.Folder + "TestNoGo13/"
-			gpi.Gate.NoGo = 1.3
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo13/", "", 1)
+			// //testing NoGo 1.3
+			// ss.Folder = ss.Folder + "TestNoGo13/"
+			// gpi.Gate.NoGo = 1.3
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo13/", "", 1)
 
-			//testing NoGo 1.4
-			ss.Folder = ss.Folder + "TestNoGo14/"
-			gpi.Gate.NoGo = 1.4
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo14/", "", 1)
+			// //testing NoGo 1.4
+			// ss.Folder = ss.Folder + "TestNoGo14/"
+			// gpi.Gate.NoGo = 1.4
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo14/", "", 1)
 
-			//testing NoGo 1.5
-			ss.Folder = ss.Folder + "TestNoGo15/"
-			gpi.Gate.NoGo = 1.5
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo15/", "", 1)
+			// //testing NoGo 1.5
+			// ss.Folder = ss.Folder + "TestNoGo15/"
+			// gpi.Gate.NoGo = 1.5
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo15/", "", 1)
 
-			//testing NoGo 1.6
-			ss.Folder = ss.Folder + "TestNoGo16/"
-			gpi.Gate.NoGo = 1.6
-			ss.RunTestAll()
-			ss.Folder = strings.Replace(ss.Folder, "TestNoGo16/", "", 1)
+			// //testing NoGo 1.6
+			// ss.Folder = ss.Folder + "TestNoGo16/"
+			// gpi.Gate.NoGo = 1.6
+			// ss.RunTestAll()
+			// ss.Folder = strings.Replace(ss.Folder, "TestNoGo16/", "", 1)
 		}
+
+	} else if ss.Experiment == "burstdipgate" {
+		//search across those parameters
 
 	} else {
 
