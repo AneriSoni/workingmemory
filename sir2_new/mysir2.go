@@ -10,6 +10,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	"math/rand"
@@ -373,7 +374,8 @@ type Sim struct {
 	Experiment    string  `inactive:"+" desc:"type of experiment to run"`
 	NumModels     int     `inactive:"+" desc:"number of models to run"`
 	RunLocation   string  `inactive:"+" desc:"location run, determines file save location"`
-	arrayscale    bool    `inactive:"+" desc:"tells if we need to do any scaling because of job arrays"`
+	paramarray    string  `inactive:"+" desc:"if there is a param file (should be a .txt file)"`
+	linenum       int     `what line numebr to read from the file"`
 
 	TrlDecodedDiff    float64 `inactive:"+" desc:"current trial's error based on the difference between decoded targ and decoded actm"`
 	SumTrlDecodedDiff float64 `inactive:"+" desc:"sum over the trial's error"`
@@ -2887,13 +2889,81 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TrainEnv.IgnoreTr, "TrainIgnoreTr", true, "whether we should have ignore trials.")
 	flag.BoolVar(&ss.TestEnv.IgnoreTr, "TestIgnoreTr", true, "whether we should have ignore trials.")
 	flag.IntVar(&ss.NumStimConst, "NumStimConst", ss.SirTask, "number of stimuli that model sees.")
-	flag.BoolVar(&ss.arrayscale, "arrayscale", false, "if running job arrays, some scaling needs to be applied, so this will do that")
+	flag.StringVar(&ss.paramarray, "paramarray", "", "if there is a file, then need to read in the params.")
+	flag.IntVar(&ss.linenum, "linenum", 0, "what line to read from the text file")
 	flag.Float64Var(&ss.DipDaGain, "DipDaGain", 1, "DipDaGain")
 	flag.Float64Var(&ss.BurstDaGain, "BurstDaGain", 1, "BurstDaGain")
 	flag.Float64Var(&ss.NoGo, "NoGo", 1.25, "Gate No Go")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
+	if ss.paramarray != "" {
+		f, err := os.Open(ss.paramarray)
+
+		var words []string
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+
+		// scanner := bufio.NewScanner(f)
+		// scanner.Split(bufio.ScanWords)
+
+		// for scanner.Scan() {
+		// 	words = append(words, scanner.Text())
+		// }
+
+		// if s, err := strconv.ParseFloat(words[0], 8); err == nil {
+		// 	ss.BurstDaGain = s
+		// 	s = s * 10
+		// 	//s2 := fmt.Sprintf("%f", s)
+		// 	s2 := strconv.Itoa(int(s))
+		// 	ss.Folder = ss.Folder + "Burst" + s2 + "/"
+		// }
+		// if s, err := strconv.ParseFloat(words[1], 8); err == nil {
+		// 	ss.DipDaGain = s
+		// 	s = s * 10
+		// 	//s2 := fmt.Sprintf("%f", s)
+		// 	s2 := strconv.Itoa(int(s))
+		// 	ss.Folder = ss.Folder + "Dip" + s2 + "/"
+		// }
+		// fmt.Printf(ss.Folder)
+		// if err := scanner.Err(); err != nil {
+		// 	log.Fatal(err)
+		// }
+		rawBytes, err := ioutil.ReadAll(f)
+		lines := strings.Split(string(rawBytes), "\n")
+		var words2 string
+		for i, line := range lines {
+			if i == ss.linenum {
+				words = append(words, line)
+				words2 = words[0]
+				//fmt.Println(words2)
+			}
+		}
+
+		words3 := strings.Split(words2, " ")
+		//fmt.Printf(words2)
+		//fmt.Println(words3)
+		if s, err := strconv.ParseFloat(words3[0], 8); err == nil {
+			ss.BurstDaGain = s
+			s = s * 10
+			//s2 := fmt.Sprintf("%f", s)
+			s2 := strconv.Itoa(int(s))
+			ss.Folder = ss.Folder + "Burst" + s2 + "/"
+		}
+		words3[1] = strings.Replace(words3[1], "\r", "", 1)
+		if s, err := strconv.ParseFloat(words3[1], 8); err == nil {
+			ss.DipDaGain = s
+			s = s * 10
+			//s2 := fmt.Sprintf("%f", s)
+			s2 := strconv.Itoa(int(s))
+			ss.Folder = ss.Folder + "Dip" + s2 + "/"
+		}
+		fmt.Printf(ss.Folder)
+
+	}
+
 	ss.Init()
 
 	//ly := ss.Net.LayerByName("GPiThal").(leabra.LeabraLayer).AsLeabra()
@@ -2903,9 +2973,7 @@ func (ss *Sim) CmdArgs() {
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
 	fmt.Printf("denom: %v\n", ss.denom)
 	fmt.Printf("numstimconst: %v\n", ss.NumStimConst)
-	if ss.arrayscale {
-		ss.BurstDaGain = ss.BurstDaGain / 10
-		ss.DipDaGain = ss.DipDaGain / 10
+	if ss.paramarray != "" {
 
 	}
 	fmt.Printf("DipDaGain: %v\n", ss.DipDaGain)
