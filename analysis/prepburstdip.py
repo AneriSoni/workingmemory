@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
+#import seaborn as sns
 import os
-sns.set()
+#sns.set()
 from decodedoutputdefs import Precision, training_curve_indv, training_curve_average #class with the compiled definitions
 
 #extra definitions 
@@ -83,20 +83,28 @@ def overlayhist(base, base2, task,experiment, errchunk = [], err = [], title = '
         else:
             total_mean_nochunk, std_nochunk = 0,0
 
-    plot1 = plt.hist(errchunk,bins = np.linspace(-180,180,45), alpha = 0.4)
-    plot2 = plt.hist(err,bins = np.linspace(-180,180,45), alpha = 0.4, color = "yellow")
+#     plot1 = plt.hist(errchunk,bins = np.linspace(-180,180,45), alpha = 0.4)
+#     plot2 = plt.hist(err,bins = np.linspace(-180,180,45), alpha = 0.4, color = "yellow")
 
     # calc middle of bin and width of bin
-    ax = [(plot1[1][x]+plot1[1][x+1])/2 for x in range(len(plot1[1])-1)] 
-    diff = [_plot1 - _plot2 for _plot1, _plot2 in zip(plot1[0], plot2[0])]
-    plt.bar(ax, diff,width = 6, color = "red")
-    plt.legend(['Chunk', "No Chunk", "Chunk - No Chunk"])
-    CB = chunkingbenefit(ax,diff,len(err))
-    plt.title(title+" ,CB: {:.4f}".format(CB))
-    if savefig: 
-        plt.savefig(savefile)    
-    plt.show()
-    
+#     ax = [(plot1[1][x]+plot1[1][x+1])/2 for x in range(len(plot1[1])-1)] 
+#     diff = [_plot1 - _plot2 for _plot1, _plot2 in zip(plot1[0], plot2[0])]
+#     plt.bar(ax, diff,width = 6, color = "red")
+#     plt.legend(['Chunk', "No Chunk", "Chunk - No Chunk"])
+#     CB = chunkingbenefit(ax,diff,len(err))
+#     plt.title(title+" ,CB: {:.4f}".format(CB))
+#     if savefig: 
+#         plt.savefig(savefile)    
+#     plt.show()
+    chunk_countmid = np.sum(np.abs(errchunk)<30)
+    chunk_countedge = np.sum(np.abs(errchunk)>30)
+    nochunk_countmid = np.sum(np.abs(err)<30)
+    nochunk_countedge = np.sum(np.abs(err)>30)
+    chunking_benefit= ((chunk_countmid - nochunk_countmid) - (chunk_countedge - nochunk_countedge))/len(err)
+    #print(chunking_benefit)
+    ax = ""
+    diff = ""
+    CB = chunking_benefit
     
     return errchunk, err, ax, diff, CB, total_mean_chunk, total_mean_nochunk,std_chunk, std_nochunk
 
@@ -139,6 +147,8 @@ def run_all(base, base2, experiment):
 
     task = "2"
     errchunk, err, ax, diff, CB, total_mean_chunk, total_mean_nochunk,std_chunk, std_nochunk = overlayhist(base,base2,task,experiment)
+    
+
 
 
 Burst = [0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6]
@@ -148,16 +158,17 @@ DipName = ["4", "6", "8", "10", "12", "14", "16"]
 
 
 #base = "Z:/leabra/examples/workingmemory/"
-base = "Y:/"
+#base = "Y:/"
+base = "/gpfs/data/frankmj/asoni4/"
 base2 = "results/Ring/2Stripe/"
 task = "2"
 nogo = "TestNoGo125/" #"TestNoGo125/", "TestNoGo16/"
 savefile_append = "_trace01_nogo125"
 
-# chunking_benefit=[]
-# chunk_ABE = []
-# nochunk_ABE = []
-# burstdip = []
+chunking_benefit=[]
+chunk_ABE = []
+nochunk_ABE = []
+burstdip = []
 
 for burst in range(len(Burst)):
     for dip in range(len(Dip)):
