@@ -128,9 +128,9 @@ def training_curve_average(base, specific_file = 'None', additional_title = ''):
     SSE_avg = np.mean(SSE_np, axis = 0)
     plt.plot(Epoch[0],SSE_avg)
     if "StimRange0to45" in f:
-        plt.title(f.split('workingmemory')[1].split('/')[1]+' StimDist Max 45'+additional_title)
+        plt.title(f.split('/')[1]+' StimDist Max 45'+additional_title)
     else:
-        plt.title(f.split('workingmemory')[1].split('/')[1]+additional_title)
+        plt.title(f.split('/')[1]+additional_title)
     plt.show()
     return SSE_avg,Epoch
 

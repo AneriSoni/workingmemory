@@ -724,6 +724,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 		return
 	}
 	net.InitWts()
+	net.LrateMult(1)
 	//ly := ss.Net.LayerByName("GPiThal").(leabra.LeabraLayer).AsLeabra()
 	//ly.RcvPrjns[0].SetSynVal("bias", 0, 0, 1.0)
 }
@@ -1444,6 +1445,7 @@ func (ss *Sim) TrainTrial() {
 			ss.UpdateView(true)
 		}
 		ss.LogTrnEpc(ss.TrnEpcLog)
+		ss.LrateSched(epc)
 		if ss.ViewOn && ss.TrainUpdt > leabra.AlphaCycle {
 			ss.UpdateView(true)
 		}
@@ -1501,7 +1503,8 @@ func (ss *Sim) NewRun() {
 	run := ss.TrainEnv.Run.Cur
 	ss.TrainEnv.Init(run)
 	ss.Time.Reset()
-	ss.Net.InitWts()
+	//ss.Net.InitWts()
+	ss.Net.LrateMult(1)
 	ss.InitStats()
 	ss.TrnEpcLog.SetNumRows(0)
 	ss.TstEpcLog.SetNumRows(0)
@@ -1738,6 +1741,40 @@ func (ss *Sim) Stopped() {
 // it will auto-prompt for filename
 func (ss *Sim) SaveWeights(filename gi.FileName) {
 	ss.Net.SaveWtsJSON(filename)
+}
+
+// LrateSched implements the learning rate schedule
+
+func (ss *Sim) LrateSched(epc int) {
+	// switch epc {
+	// case 5:
+	// 	ss.Net.LrateMult(0.5)
+	// 	fmt.Printf("dropped lrate 0.5 at epoch: %d\n", epc)
+	// }
+	if epc < 55 {
+		mult := math.Exp(float64(-epc) / 80)
+		ss.Net.LrateMult(float32(mult))
+		//fmt.Printf("dropped lrate %v at epoch: %d\n", mult, epc)
+		//lr := ss.Params[0].Sheets["Network"].ParamVal()
+		//ss.Params[0].Sheets["Network"][0].Params["Prjn.Learn.Lrate"]
+		//fmt.Printf("dropped lrate %v at epoch: %d\n", lr, epc)
+	} else {
+		mult := 0.5
+		ss.Net.LrateMult(float32(mult))
+		//fmt.Printf("dropped lrate %v at epoch: %d\n", mult, epc)
+
+	}
+	// switch epc {
+	// case epc < 55:
+	// 	mult := math.Exp(float64(-epc / 80))
+	// 	ss.Net.LrateMult(float32(mult))
+	// 	fmt.Printf("dropped lrate %v at epoch: %d\n", mult, epc)
+	// case epc == 55 || epc > 55:
+	// 	mult := 0.5
+	// 	ss.Net.LrateMult(float32(mult))
+	// 	fmt.Printf("dropped lrate %v at epoch: %d\n", mult, epc)
+
+	// }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
