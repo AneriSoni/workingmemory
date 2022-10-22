@@ -724,6 +724,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 		return
 	}
 	net.InitWts()
+	//net.LrateMult(1)
 	//ly := ss.Net.LayerByName("GPiThal").(leabra.LeabraLayer).AsLeabra()
 	//ly.RcvPrjns[0].SetSynVal("bias", 0, 0, 1.0)
 }
@@ -1444,6 +1445,7 @@ func (ss *Sim) TrainTrial() {
 			ss.UpdateView(true)
 		}
 		ss.LogTrnEpc(ss.TrnEpcLog)
+		//ss.LrateSched(epc)
 		if ss.ViewOn && ss.TrainUpdt > leabra.AlphaCycle {
 			ss.UpdateView(true)
 		}
@@ -1501,7 +1503,8 @@ func (ss *Sim) NewRun() {
 	run := ss.TrainEnv.Run.Cur
 	ss.TrainEnv.Init(run)
 	ss.Time.Reset()
-	ss.Net.InitWts()
+	//ss.Net.InitWts()
+	//ss.Net.LrateMult(1)
 	ss.InitStats()
 	ss.TrnEpcLog.SetNumRows(0)
 	ss.TstEpcLog.SetNumRows(0)
@@ -1606,17 +1609,21 @@ func (ss *Sim) TrainEpoch() {
 func (ss *Sim) TrainRun() {
 
 	var err error
+	var err3 error
 	//fnm := ss.LogFileName("epc")
 	fnm := ""
+	fnm2 := ""
 	path := ""
 	if ss.chunklay == true {
 		if ss.SirTask == 2 {
 			if ss.RunLocation == "home" {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
 				path = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder
 				fnm = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder
 				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
@@ -1625,9 +1632,11 @@ func (ss *Sim) TrainRun() {
 			if ss.RunLocation == "home" {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
 				path = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder
 				fnm = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder
 				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
@@ -1636,9 +1645,11 @@ func (ss *Sim) TrainRun() {
 			if ss.RunLocation == "home" {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
 				path = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder
 				fnm = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
 				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
@@ -1648,9 +1659,11 @@ func (ss *Sim) TrainRun() {
 			if ss.RunLocation == "home" {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
 				path = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder
 				fnm = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder
 				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
@@ -1659,9 +1672,11 @@ func (ss *Sim) TrainRun() {
 			if ss.RunLocation == "home" {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
 				path = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder
 				fnm = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
 				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
@@ -1670,9 +1685,11 @@ func (ss *Sim) TrainRun() {
 			if ss.RunLocation == "home" {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
 				path = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder
 				fnm = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
 				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
@@ -1685,6 +1702,7 @@ func (ss *Sim) TrainRun() {
 		log.Println(err2)
 	}
 	ss.TrnEpcFile, err = os.Create(fnm)
+	ss.TrnTrlFile, err3 = os.Create(fnm2)
 
 	ss.StopNow = false
 	curRun := ss.TrainEnv.Run.Cur
@@ -1702,6 +1720,13 @@ func (ss *Sim) TrainRun() {
 	} else {
 		//fmt.Printf("Saving epoch log to: %s\n", fnm)
 		defer ss.TrnEpcFile.Close()
+	}
+	if err != nil {
+		log.Println(err3)
+		ss.TrnTrlFile = nil
+	} else {
+		//fmt.Printf("Saving epoch log to: %s\n", fnm)
+		defer ss.TrnTrlFile.Close()
 	}
 }
 
@@ -1738,6 +1763,40 @@ func (ss *Sim) Stopped() {
 // it will auto-prompt for filename
 func (ss *Sim) SaveWeights(filename gi.FileName) {
 	ss.Net.SaveWtsJSON(filename)
+}
+
+// LrateSched implements the learning rate schedule
+
+func (ss *Sim) LrateSched(epc int) {
+	// switch epc {
+	// case 5:
+	// 	ss.Net.LrateMult(0.5)
+	// 	fmt.Printf("dropped lrate 0.5 at epoch: %d\n", epc)
+	// }
+	if epc < 55 {
+		mult := math.Exp(float64(-epc) / 80)
+		ss.Net.LrateMult(float32(mult))
+		//fmt.Printf("dropped lrate %v at epoch: %d\n", mult, epc)
+		//lr := ss.Params[0].Sheets["Network"].ParamVal()
+		//ss.Params[0].Sheets["Network"][0].Params["Prjn.Learn.Lrate"]
+		//fmt.Printf("dropped lrate %v at epoch: %d\n", lr, epc)
+	} else {
+		mult := 0.5
+		ss.Net.LrateMult(float32(mult))
+		//fmt.Printf("dropped lrate %v at epoch: %d\n", mult, epc)
+
+	}
+	// switch epc {
+	// case epc < 55:
+	// 	mult := math.Exp(float64(-epc / 80))
+	// 	ss.Net.LrateMult(float32(mult))
+	// 	fmt.Printf("dropped lrate %v at epoch: %d\n", mult, epc)
+	// case epc == 55 || epc > 55:
+	// 	mult := 0.5
+	// 	ss.Net.LrateMult(float32(mult))
+	// 	fmt.Printf("dropped lrate %v at epoch: %d\n", mult, epc)
+
+	// }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
