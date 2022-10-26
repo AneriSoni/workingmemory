@@ -76,14 +76,16 @@ class Chunking():
  
     
 #other defs not yet in compiled defs
-def training_curve_indv(base, specific_file = 'None'):
+def training_curve_indv(base, specific_file = 'None', full_files = []):
     #input is the base file with all the model files saved into it
-    files = os.listdir(base)
-    if specific_file == 'None':
-        full_files = [base+f for f in files if 'EpcLog' in f]
-    else:
-        full_files = [base+f for f in files if 'EpcLog' in f]
-        full_files = [f for f in full_files if specific_file in f]
+    if len(full_files) == 0:  
+        files = os.listdir(base)
+        if specific_file == 'None':
+            full_files = [base+f for f in files if 'EpcLog' in f]
+        else:
+            full_files = [base+f for f in files if 'EpcLog' in f]
+            full_files = [f for f in full_files if specific_file in f]
+            
     for f in full_files:
         if 'model0_' in f:
             plt.figure()
@@ -138,6 +140,7 @@ def getfiles(base):
     files = os.listdir(base)
     files = [f for f in files if '.csv' in f]
     full_files = [base+f for f in files if 'EpcLog' not in f]
+    full_files = [f for f in full_files if 'TrialLog' not in f]
     return full_files
 
 def geterror(base):
@@ -236,6 +239,7 @@ def modelerr(base, title = '', additional_title = ''):
     files = os.listdir(base)
     files = [f for f in files if '.csv' in f]
     full_files = [base+f for f in files if 'EpcLog' not in f]
+    full_files = [f for f in full_files if 'TrialLog' not in f]
     p = Precision()
     err = p.mult_models(full_files)
     #print(len(err))
