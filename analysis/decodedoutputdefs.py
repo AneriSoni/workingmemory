@@ -105,7 +105,8 @@ def training_curve_indv(base, specific_file = 'None', full_files = []):
             Epoch = df[1]
             plt.plot(Epoch[1:],SSE[1:])
             plt.show()
-def training_curve_average(base, specific_file = 'None', additional_title = ''):
+    return SSE,Epoch
+def training_curve_average(base, specific_file = 'None', additional_title = '', plot = True):
     files = os.listdir(base)
     if specific_file == 'None':
         full_files = [base+f for f in files if 'EpcLog' in f]
@@ -128,12 +129,13 @@ def training_curve_average(base, specific_file = 'None', additional_title = ''):
             #Epoch = df[1]
     SSE_np = np.array(SSE)
     SSE_avg = np.mean(SSE_np, axis = 0)
-    plt.plot(Epoch[0],SSE_avg)
-    if "StimRange0to45" in f:
-        plt.title(f.split('/')[1]+' StimDist Max 45'+additional_title)
-    else:
-        plt.title(f.split('/')[1]+additional_title)
-    plt.show()
+    if plot: 
+        plt.plot(Epoch[0],SSE_avg)
+        if "StimRange0to45" in f:
+            plt.title(f.split('/')[1]+' StimDist Max 45'+additional_title)
+        else:
+            plt.title(f.split('/')[1]+additional_title)
+        plt.show()
     return SSE_avg,Epoch
 
 def getfiles(base):
@@ -317,7 +319,7 @@ class Precision():
                     use_decodeout_recall.append(decodeout_recall.values[i])
             self.num_nonresponse = num_nonresponse
             self.total_length = len(use_decodeout_recall)
-        if nonresponse == 'swap':
+        elif nonresponse == 'swap':
             num_nonresponse = 0
             stripes = [i for i in df.keys() if 'stripe' in i] #find the stripe names
 
@@ -426,12 +428,13 @@ class Precision():
 #         self.diffrecall = diffrecall
 #         return diffrecall
     
-    def err_recall_type(self, file, sep = '\t'):
+    def err_recall_type(self, file, sep = '\t', df  = []):
         #this only makes sense on a model by model basis - only one model at a time - because one model could learn for recall 1 and another
         #for recall2 and then they would cancel each other out. 
-        df = pd.read_csv(file,sep)
-        self.dat = df
-        _,diffrecall = self.get_diffs(df)
+        if len(df) == 0:
+            df = pd.read_csv(file,sep)
+            self.dat = df
+        _,diffrecall = self.get_diffs(df, nonresponse = 'guess')
         
         recall_type = []
         df_recall = self.df_recall
@@ -452,12 +455,13 @@ class Precision():
             
         return recall1_err,recall2_err
     
-    def err_recall_type_sir3(self, file, sep = '\t'):
+    def err_recall_type_sir3(self, file, sep = '\t', df = []):
         #this only makes sense on a model by model basis - only one model at a time - because one model could learn for recall 1 and another
         #for recall2 and then they would cancel each other out. 
-        df = pd.read_csv(file,sep)
-        self.dat = df
-        _,diffrecall = self.get_diffs(df)
+        if len(df) == 0:
+            df = pd.read_csv(file,sep)
+            self.dat = df
+        _,diffrecall = self.get_diffs(df, nonresponse = 'guess')
         
         recall_type = []
         df_recall = self.df_recall
@@ -482,6 +486,42 @@ class Precision():
                 recall3_err.append(diffrecall[i])
             
         return recall1_err,recall2_err,recall3_err
+    def err_recall_type_sir4(self, file, sep = '\t', df = []):
+        #this only makes sense on a model by model basis - only one model at a time - because one model could learn for recall 1 and another
+        #for recall2 and then they would cancel each other out. 
+        if len(df)== 0:
+            df = pd.read_csv(file,sep)
+            self.dat = df
+        _,diffrecall = self.get_diffs(df, nonresponse = 'guess')
+        
+        recall_type = []
+        df_recall = self.df_recall
+        for i in range(len(df_recall)):
+            trial = df_recall['$TrialName'].iloc[i]
+            if 'Recall1' in trial:
+                recall_type.append('Recall1')
+            elif 'Recall2' in trial:
+                recall_type.append('Recall2')
+            elif 'Recall3' in trial:
+                recall_type.append('Recall3')
+            elif 'Recall4' in trial:
+                recall_type.append('Recall4')
+        recall1_err = []
+        recall2_err = []
+        recall3_err = []
+        recall4_err = []
+        
+        for i in range(len(diffrecall)):
+            if recall_type[i] == 'Recall1':
+                recall1_err.append(diffrecall[i])
+            elif recall_type[i] == 'Recall2':
+                recall2_err.append(diffrecall[i])
+            elif recall_type[i] == 'Recall3':
+                recall3_err.append(diffrecall[i])
+            elif recall_type[i] == 'Recall4':
+                recall4_err.append(diffrecall[i])
+            
+        return recall1_err,recall2_err,recall3_err,recall4_err
     
         
     def create_dat(files, var, var_values): 

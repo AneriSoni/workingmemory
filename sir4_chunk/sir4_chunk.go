@@ -178,7 +178,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Fixed": "true",
 					"Layer.Act.Dt.GTau":        "3",
 					"Layer.Gate.GeGain":        "3",
-					"Layer.Gate.NoGo":          "0.5",  // was 1 default
+					"Layer.Gate.NoGo":          "1.25", // was 1 default
 					"Layer.Gate.Thr":           "0.25", // .2 default
 				}},
 			{Sel: "#GPeNoGo", Desc: "GPe is a regular layer -- needs special params",
@@ -344,6 +344,8 @@ type Sim struct {
 	NumStimConst int  `desc: "tells how many stimuli the model will get to see "`
 	OneR         bool `desc: "this is the version for when there is only 1 recall unit and then we will re-stimulate the store unit. "`
 	testint      bool `desc: "testing during the training. "`
+	fillstim     bool `desc:" if this is true, then need to fill all stim before recall. "`
+	resetstim    bool `desc:" if this is true, then the stim will be reset after a recall. "`
 
 	NoGo float64 `desc: "the gate value, NoGo "`
 
@@ -494,13 +496,15 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxTrls = 100
 	}
 
-	ss.IgnoreTr = false //need to change back to false
+	ss.IgnoreTr = false //need to change back to true
 
 	ss.SirTask = 4
 	ss.chunklay = true
 	ss.NumStimConst = ss.SirTask
 	//fmt.Printf("Numconst: %v ;", ss.NumStimConst)
-	ss.OneR = true //this makes it so that there is one recall type.
+	ss.OneR = true       //this makes it so that there is one recall type.
+	ss.fillstim = false  //this makes it so that all stimuli have to be filled before recall trial.
+	ss.resetstim = false //reset stimuli to -1 after recall trial.
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
@@ -517,6 +521,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.IgnoreTr = ss.IgnoreTr
 	ss.TrainEnv.NumStimConst = ss.NumStimConst
 	ss.TrainEnv.OneR = ss.OneR
+	ss.TrainEnv.fillstim = ss.fillstim
+	ss.TrainEnv.resetstim = ss.resetstim
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
@@ -533,6 +539,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.IgnoreTr = ss.IgnoreTr
 	ss.TestEnv.NumStimConst = ss.NumStimConst
 	ss.TestEnv.OneR = ss.OneR
+	ss.TestEnv.fillstim = ss.fillstim
+	ss.TestEnv.resetstim = ss.resetstim
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
@@ -2330,8 +2338,9 @@ func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
 		stnm := "stripe" + string(stripe)
 		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
 	}
-	sch = append(sch, etable.Schema{{"ChunkDecode", etensor.FLOAT64, nil, nil}}...) //adds chunk value to table)
-
+	if ss.chunklay == true {
+		sch = append(sch, etable.Schema{{"ChunkDecode", etensor.FLOAT64, nil, nil}}...) //adds chunk value to table
+	}
 	sch = append(sch, etable.Schema{
 
 		{"OutDecode", etensor.FLOAT64, nil, nil}, //adds outdecode value to table
@@ -2960,6 +2969,10 @@ func (ss *Sim) CmdArgs() {
 	flag.Float64Var(&ss.BurstDaGain, "BurstDaGain", 1, "BurstDaGain")
 	flag.Float64Var(&ss.NoGo, "NoGo", 1.25, "Gate No Go")
 	flag.BoolVar(&ss.testint, "testint", false, "testing during training")
+	flag.BoolVar(&ss.TrainEnv.fillstim, "Trainfillstim", false, "fillstim for training")
+	flag.BoolVar(&ss.TestEnv.fillstim, "Testfillstim", false, "fillstim for testing")
+	flag.BoolVar(&ss.TrainEnv.resetstim, "Trainresetstim", false, "resetstim for training")
+	flag.BoolVar(&ss.TestEnv.resetstim, "Testresetstim", false, "resetstim for testing")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
@@ -3039,6 +3052,10 @@ func (ss *Sim) CmdArgs() {
 	fmt.Printf("RewardType: %s\n", ss.RewardType)
 	fmt.Printf("denom: %v\n", ss.denom)
 	fmt.Printf("numstimconst: %v\n", ss.NumStimConst)
+	fmt.Printf("train fillstim: %v\n", ss.TrainEnv.fillstim)
+	fmt.Printf("test fillstim: %v\n", ss.TestEnv.fillstim)
+	fmt.Printf("train resetstim: %v\n", ss.TrainEnv.resetstim)
+	fmt.Printf("test resetstim: %v\n", ss.TestEnv.resetstim)
 	if ss.paramarray != "" {
 
 	}
