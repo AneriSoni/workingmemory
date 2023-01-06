@@ -76,8 +76,10 @@ class Chunking():
  
     
 #other defs not yet in compiled defs
-def training_curve_indv(base, specific_file = 'None', full_files = []):
+def training_curve_indv(base, specific_file = 'None', full_files = [], last_epoch = False, plot = True):
     #input is the base file with all the model files saved into it
+    if last_epoch:
+        last_epoch_SSE = []
     if len(full_files) == 0:  
         files = os.listdir(base)
         if specific_file == 'None':
@@ -88,24 +90,33 @@ def training_curve_indv(base, specific_file = 'None', full_files = []):
             
     for f in full_files:
         if 'model0_' in f:
-            plt.figure()
             df = pd.read_csv(f, sep = '\t')
             #SSE = df['#SSE']
             SSE = df['#EpcDecodedDiff']
             Epoch = df['|Epoch']
-            plt.plot(Epoch,SSE)
-            plt.show()
+            if last_epoch:
+                last_epoch_SSE.append(SSE.iloc[-1])
+            if plot:
+                plt.figure()
+                plt.plot(Epoch,SSE)
+                plt.show()
 #         elif 'model10_' in f: #this should be fixed now because i fixed the max number of runs. 
 #             print('skipping model 10')
         else:
             #print(f)
-            plt.figure()
             df = pd.read_csv(f,sep = '\t', header = None)
             SSE  = df[2]
             Epoch = df[1]
-            plt.plot(Epoch[1:],SSE[1:])
-            plt.show()
-    return SSE,Epoch
+            if last_epoch:
+                last_epoch_SSE.append(SSE.iloc[-1])
+            if plot:
+                plt.figure()
+                plt.plot(Epoch[1:],SSE[1:])
+                plt.show()
+    if last_epoch_SSE:
+        return last_epoch_SSE
+    else:
+        return SSE,Epoch
 def training_curve_average(base, specific_file = 'None', additional_title = '', plot = True):
     files = os.listdir(base)
     if specific_file == 'None':

@@ -64,6 +64,8 @@ type SIREnv struct {
 
 	NumStimConst int  `desc:"decides how many items the task should be trained on. "`
 	OneR         bool `desc:" if this is true, then there is only 1 R and we reactivate the corresponding store unit. "`
+	fillstim     bool `desc:" if this is true, then need to fill all stim before recall. "`
+	resetstim    bool `desc:" if this is true, then reset all stim after recall trial. "`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -215,6 +217,15 @@ func (ev *SIREnv) StepSIR() {
 	for {
 		ev.Act = Actions(rand.Intn(int(ActionsN)))
 		//fmt.Printf("%s", ev.Act)
+		if ev.fillstim {
+			if ev.Act == Recall1 || ev.Act == Recall2 {
+				if ev.Maint1 < 0 || ev.Maint2 < 0 { //one of the stim is empty
+					continue
+				}
+
+			}
+
+		}
 		if ev.Act == Store1 && ev.Maint1 >= 0 { // already full
 			continue
 		}
@@ -320,9 +331,15 @@ func (ev *SIREnv) StepSIR() {
 	case Recall1:
 		ev.Stim = ev.Maint1
 		ev.Maint1 = -1
+		if ev.resetstim {
+			ev.Maint2 = -1
+		}
 	case Recall2:
 		ev.Stim = ev.Maint2
 		ev.Maint2 = -1
+		if ev.resetstim {
+			ev.Maint1 = -1
+		}
 	}
 	ev.SetState()
 }
