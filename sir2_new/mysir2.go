@@ -200,6 +200,10 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Init":  "0.2",
 					"Layer.Inhib.ActAvg.Fixed": "true",
 				}},
+			{Sel: "#PFCmntD",
+				Params: params.Params{
+					"Layer.Maint.OutClearMaint": "true",
+				}},
 			{Sel: "#Input", Desc: "Basic params",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init":  "0.25",
