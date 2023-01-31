@@ -508,10 +508,10 @@ func (ss *Sim) ConfigEnv() {
 	ss.chunklay = false
 	ss.NumStimConst = ss.SirTask
 	//fmt.Printf("Numconst: %v ;", ss.NumStimConst)
-	ss.OneR = true            //this makes it so that there is one recall type.
-	ss.fillstim = true        //this makes it so that all stimuli have to be filled before recall trial.
-	ss.resetstim = true       //reset stimuli to -1 after recall trial.
-	ss.clearallstripes = true // clears all stripesafter recall trial //this has not been fully developed yet.
+	ss.OneR = true             //this makes it so that there is one recall type.
+	ss.fillstim = false        //this makes it so that all stimuli have to be filled before recall trial.
+	ss.resetstim = false       //reset stimuli to -1 after recall trial.
+	ss.clearallstripes = false // clears all stripesafter recall trial //this has not been fully developed yet.
 	ss.addstimloc = false
 
 	ss.TrainEnv.Nm = "TrainEnv"
