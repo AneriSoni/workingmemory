@@ -343,13 +343,15 @@ type Sim struct {
 	SirTask    int         `desc: "tells which task type it is"`
 	Acts       int         `desc: "tells  how many possible actions, helps build layers"`
 	chunklay   bool        `desc: "tells if there will be chunk or not. "`
+	addstimloc bool        `desc: "tells if there will be stimloc layer. "`
 
-	IgnoreTr     bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
-	NumStimConst int  `desc: "tells how many stimuli the model will get to see "`
-	OneR         bool `desc: "this is the version for when there is only 1 recall unit and then we will re-stimulate the store unit. "`
-	testint      bool `desc: "testing during the training. "`
-	fillstim     bool `desc:" if this is true, then need to fill all stim before recall. "`
-	resetstim    bool `desc:" if this is true, then the stim will be reset after a recall. "`
+	IgnoreTr        bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
+	NumStimConst    int  `desc: "tells how many stimuli the model will get to see "`
+	OneR            bool `desc: "this is the version for when there is only 1 recall unit and then we will re-stimulate the store unit. "`
+	testint         bool `desc: "testing during the training. "`
+	fillstim        bool `desc:" if this is true, then need to fill all stim before recall. "`
+	resetstim       bool `desc:" if this is true, then the stim will be reset after a recall. "`
+	clearallstripes bool `desc:" if this is true, then the all stripes will be cleared after a recall trial. "`
 
 	NoGo float64 `desc: "the gate value, NoGo "`
 
@@ -506,9 +508,11 @@ func (ss *Sim) ConfigEnv() {
 	ss.chunklay = true
 	ss.NumStimConst = ss.SirTask
 	//fmt.Printf("Numconst: %v ;", ss.NumStimConst)
-	ss.OneR = true       //this makes it so that there is one recall type.
-	ss.fillstim = false  //this makes it so that all stimuli have to be filled before recall trial.
-	ss.resetstim = false //reset stimuli to -1 after recall trial.
+	ss.OneR = true            //this makes it so that there is one recall type.
+	ss.fillstim = true        //this makes it so that all stimuli have to be filled before recall trial.
+	ss.resetstim = true       //reset stimuli to -1 after recall trial.
+	ss.clearallstripes = true // clears all stripesafter recall trial //this has not been fully developed yet.
+	ss.addstimloc = false
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
@@ -562,7 +566,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.RewardType = "contlinear"  //need to change back to ""
 	ss.denom = 20.0
 
-	ss.Lesion = "StimLoc" //need to change back to "None"
+	ss.Lesion = "None" //need to change back to "None"
 	ss.LesionProp = 0
 	ss.LesionApplied = "no"
 
@@ -621,13 +625,11 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	//chunk := net.AddLayer2D("Chunk", 1, ss.LayerSize, emer.Hidden)
 	//chunk.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Hidden", XAlign: relpos.Left, Space: 3})
 
-	stimloc := net.AddLayer2D("StimLoc", 1, ss.Stripes, emer.Input)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	//out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	out.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	ctrl.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", XAlign: relpos.Left, Space: 2})
 	hid.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "CtrlInput", XAlign: relpos.Left, Space: 2})
-	stimloc.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "CtrlInput", YAlign: relpos.Front, Space: 1})
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
 	//mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, ss.LayerSize)
@@ -676,16 +678,10 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcOutD, rp, full, emer.Forward, &rl.RWPrjn{})
-	net.ConnectLayersPrjn(stimloc, rp, full, emer.Forward, &rl.RWPrjn{})
 
 	pj := net.ConnectLayersPrjn(ctrl, mtxGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
 	pj = net.ConnectLayersPrjn(ctrl, mtxNoGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
-	pj.SetClass("MatrixPrjn")
-
-	pj = net.ConnectLayersPrjn(stimloc, mtxGo, full, emer.Forward, &pbwm.MatrixTracePrjn{})
-	pj.SetClass("MatrixPrjn")
-	pj = net.ConnectLayersPrjn(stimloc, mtxNoGo, full, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
 
 	if ss.chunklay == true {
@@ -724,6 +720,17 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 
 		//pj = net.ConnectLayersPrjn(mtxGo, gpi, prjn.NewPoolOneToOne(),emer.Forward, &pbwm.GPiThalPrjn{}) #this does not work.
 		//pj.SetClass("BgFixed2") //this does not work
+	}
+
+	if ss.addstimloc {
+		stimloc := net.AddLayer2D("StimLoc", 1, ss.Stripes, emer.Input)
+		stimloc.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "CtrlInput", YAlign: relpos.Front, Space: 1})
+		net.ConnectLayersPrjn(stimloc, rp, full, emer.Forward, &rl.RWPrjn{})
+		pj = net.ConnectLayersPrjn(stimloc, mtxGo, full, emer.Forward, &pbwm.MatrixTracePrjn{})
+		pj.SetClass("MatrixPrjn")
+		pj = net.ConnectLayersPrjn(stimloc, mtxNoGo, full, emer.Forward, &pbwm.MatrixTracePrjn{})
+		pj.SetClass("MatrixPrjn")
+
 	}
 
 	snc.SendDA.AddAllBut(net, nil) // send dopamine to all layers..
@@ -828,6 +835,14 @@ func (ss *Sim) AlphaCyc(train bool) {
 	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
 	viewUpdt := ss.TrainUpdt
 	if !train {
+		// if ss.clearallstripes {
+		// 	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+		// 	pfc.InitActs()
+		// 	//nrn := &pfc.AsLeabra().Neurons
+		// 	//nrn := &Neuron{}
+		// 	//pfc.Act.InitActs(nrn)
+		// }
+
 		viewUpdt = ss.TestUpdt
 	}
 
@@ -879,8 +894,17 @@ func (ss *Sim) AlphaCyc(train bool) {
 		ss.Net.DWt()
 	}
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
+		// if ss.clearallstripes {
+		// 	if
+		// 	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+		// 	pfc.InitActs()
+		// 	//nrn := &pfc.AsLeabra().Neurons
+		// 	//nrn := &Neuron{}
+		// 	//pfc.Act.InitActs(nrn)
+		// }
 		ss.UpdateView(train)
 	}
+
 }
 
 func (ss *Sim) LocateItem(en env.Env) {
@@ -1182,146 +1206,149 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 			} else if strings.Contains(en.Name(), "Test") {
 				tr = ss.TestEnv.String()
 			}
-			if strings.Contains(tr, "Recall") { //recall trial
-				//fmt.Printf("recall trial")
-				ly = ss.Net.LayerByName("StimLoc").(leabra.LeabraLayer).AsLeabra()
-				loc := make([]int, 2)
-				stripe1 := false
-				stripe2 := false
-				//do calculations to figure out which stripe it is in
-				//if pats.FloatVal1D(3) == 1 { //Recall 1
-				if strings.Contains(tr, "Recall1") { //Recall 1
-					if ss.StimStripe[0][0] == 1 {
-						stripe1 = true
-						loc[0] = 1
+			if ss.addstimloc {
 
-					}
-					if ss.StimStripe[1][0] == 1 {
-						stripe2 = true
-						loc[1] = 1
-					}
-					if stripe1 == true && stripe2 == true {
-						//need to add ss.StimStripe[0][2] and ss.StimStripe[1][2] into addition
-
-						stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
-						stripe2items := sumx(ss.StimStripe[1]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
-						if stripe1items < stripe2items {
+				if strings.Contains(tr, "Recall") { //recall trial
+					//fmt.Printf("recall trial")
+					ly = ss.Net.LayerByName("StimLoc").(leabra.LeabraLayer).AsLeabra()
+					loc := make([]int, 2)
+					stripe1 := false
+					stripe2 := false
+					//do calculations to figure out which stripe it is in
+					//if pats.FloatVal1D(3) == 1 { //Recall 1
+					if strings.Contains(tr, "Recall1") { //Recall 1
+						if ss.StimStripe[0][0] == 1 {
+							stripe1 = true
 							loc[0] = 1
-							loc[1] = 0
-							stripe2 = false
 
-						} else if stripe1items >= stripe2items {
-							loc[0] = 0
+						}
+						if ss.StimStripe[1][0] == 1 {
+							stripe2 = true
 							loc[1] = 1
-							stripe1 = false
+						}
+						if stripe1 == true && stripe2 == true {
+							//need to add ss.StimStripe[0][2] and ss.StimStripe[1][2] into addition
+
+							stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
+							stripe2items := sumx(ss.StimStripe[1]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
+							if stripe1items < stripe2items {
+								loc[0] = 1
+								loc[1] = 0
+								stripe2 = false
+
+							} else if stripe1items >= stripe2items {
+								loc[0] = 0
+								loc[1] = 1
+								stripe1 = false
+							}
+
 						}
 
 					}
 
-				}
-
-				//if pats.FloatVal1D(4) == 1 { //Recall 2
-				if strings.Contains(tr, "Recall2") {
-					if ss.StimStripe[0][1] == 1 {
-						stripe1 = true
-						loc[0] = 1
-
-					}
-					if ss.StimStripe[1][1] == 1 {
-						stripe2 = true
-						loc[1] = 1
-					}
-					if stripe1 == true && stripe2 == true {
-						stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
-						stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
-						if stripe1items < stripe2items {
+					//if pats.FloatVal1D(4) == 1 { //Recall 2
+					if strings.Contains(tr, "Recall2") {
+						if ss.StimStripe[0][1] == 1 {
+							stripe1 = true
 							loc[0] = 1
-							loc[1] = 0
-							stripe2 = false
 
-						} else if stripe1items >= stripe2items {
-							loc[0] = 0
-							loc[1] = 1
-							stripe1 = false
 						}
+						if ss.StimStripe[1][1] == 1 {
+							stripe2 = true
+							loc[1] = 1
+						}
+						if stripe1 == true && stripe2 == true {
+							stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
+							stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
+							if stripe1items < stripe2items {
+								loc[0] = 1
+								loc[1] = 0
+								stripe2 = false
 
-					}
-				}
-				if strings.Contains(tr, "Recall3") {
+							} else if stripe1items >= stripe2items {
+								loc[0] = 0
+								loc[1] = 1
+								stripe1 = false
+							}
 
-					if ss.StimStripe[0][2] == 1 {
-						stripe1 = true
-						loc[0] = 1
+						}
+					}
+					if strings.Contains(tr, "Recall3") {
 
-					}
-					if ss.StimStripe[1][2] == 1 {
-						stripe2 = true
-						loc[1] = 1
-					}
-					if stripe1 == true && stripe2 == true {
-						stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
-						stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
-						if stripe1items < stripe2items {
+						if ss.StimStripe[0][2] == 1 {
+							stripe1 = true
 							loc[0] = 1
-							loc[1] = 0
-							stripe2 = false
 
-						} else if stripe1items >= stripe2items {
-							loc[0] = 0
-							loc[1] = 1
-							stripe1 = false
 						}
+						if ss.StimStripe[1][2] == 1 {
+							stripe2 = true
+							loc[1] = 1
+						}
+						if stripe1 == true && stripe2 == true {
+							stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
+							stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
+							if stripe1items < stripe2items {
+								loc[0] = 1
+								loc[1] = 0
+								stripe2 = false
 
+							} else if stripe1items >= stripe2items {
+								loc[0] = 0
+								loc[1] = 1
+								stripe1 = false
+							}
+
+						}
 					}
-				}
 
-				if strings.Contains(tr, "Recall4") {
+					if strings.Contains(tr, "Recall4") {
 
-					if ss.StimStripe[0][3] == 1 {
-						stripe1 = true
-						loc[0] = 1
-
-					}
-					if ss.StimStripe[1][3] == 1 {
-						stripe2 = true
-						loc[1] = 1
-					}
-					if stripe1 == true && stripe2 == true {
-						stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
-						stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
-						if stripe1items < stripe2items {
+						if ss.StimStripe[0][3] == 1 {
+							stripe1 = true
 							loc[0] = 1
-							loc[1] = 0
-							stripe2 = false
 
-						} else if stripe1items >= stripe2items {
-							loc[0] = 0
-							loc[1] = 1
-							stripe1 = false
 						}
+						if ss.StimStripe[1][3] == 1 {
+							stripe2 = true
+							loc[1] = 1
+						}
+						if stripe1 == true && stripe2 == true {
+							stripe1items := sumx(ss.StimStripe[0]) //ss.StimStripe[0][0] + ss.StimStripe[0][1]
+							stripe2items := sumx(ss.StimStripe[0]) //ss.StimStripe[1][0] + ss.StimStripe[1][1]
+							if stripe1items < stripe2items {
+								loc[0] = 1
+								loc[1] = 0
+								stripe2 = false
 
+							} else if stripe1items >= stripe2items {
+								loc[0] = 0
+								loc[1] = 1
+								stripe1 = false
+							}
+
+						}
 					}
-				}
 
-				if stripe1 == true { //clear out stripe 1
-					ss.StimStripe[0][0] = 0
-					ss.StimStripe[0][1] = 0
-				}
-				if stripe2 == true { //clear out stripe 2
-					ss.StimStripe[1][0] = 0
-					ss.StimStripe[1][1] = 0
-				}
+					if stripe1 == true { //clear out stripe 1
+						ss.StimStripe[0][0] = 0
+						ss.StimStripe[0][1] = 0
+					}
+					if stripe2 == true { //clear out stripe 2
+						ss.StimStripe[1][0] = 0
+						ss.StimStripe[1][1] = 0
+					}
 
-				loctsr := etensor.NewInt([]int{1, 2}, nil, nil)
-				//fmt.Printf("loctsr, %v", loctsr)
-				for i := range loc {
-					loctsr.Values[i] = loc[i]
+					loctsr := etensor.NewInt([]int{1, 2}, nil, nil)
+					//fmt.Printf("loctsr, %v", loctsr)
+					for i := range loc {
+						loctsr.Values[i] = loc[i]
+					}
+					//fmt.Printf("loc: %v", loc)
+					//fmt.Printf("loctsr after, %v", loctsr)
+
+					ly.ApplyExt(loctsr)
+
 				}
-				//fmt.Printf("loc: %v", loc)
-				//fmt.Printf("loctsr after, %v", loctsr)
-
-				ly.ApplyExt(loctsr)
-
 			}
 
 		}
@@ -1444,7 +1471,7 @@ func (ss *Sim) TrainTrial() {
 	}
 
 	if ss.Lesion == "StimLoc" {
-		ss.Net.LayerByName("Hidden").SetOff(true)
+		ss.Net.LayerByName("StimLoc").SetOff(true)
 	}
 
 	ss.TrainEnv.Step() // the Env encapsulates and manages all counter state
@@ -1500,7 +1527,9 @@ func (ss *Sim) TrainTrial() {
 		ss.PFCmntD1Val = append(ss.PFCmntD1Val, pc.Decode(ss.TmpValsPFC[0*ss.LayerSize:(0+1)*ss.LayerSize])) //record the current pfcmntD1
 		ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
 
-		ss.LocateItem(&ss.TrainEnv) //record the location of where the current store got saved.
+		if ss.addstimloc {
+			ss.LocateItem(&ss.TrainEnv) //record the location of where the current store got saved.
+		}
 	}
 }
 
@@ -1842,7 +1871,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 
 	}
 	if ss.Lesion == "StimLoc" {
-		ss.Net.LayerByName("Hidden").SetOff(true)
+		ss.Net.LayerByName("StimLoc").SetOff(true)
 	}
 
 	ss.TestEnv.Step()
@@ -1877,7 +1906,9 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 		ss.PFCmntD1Val = append(ss.PFCmntD1Val, pc.Decode(ss.TmpValsPFC[0*ss.LayerSize:(0+1)*ss.LayerSize])) //record the current pfcmntD1
 		ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
 
-		ss.LocateItem(&ss.TestEnv) //record the location of where the current store got saved.
+		if ss.addstimloc {
+			ss.LocateItem(&ss.TestEnv) //record the location of where the current store got saved.
+		}
 	}
 }
 
@@ -2977,6 +3008,7 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TestEnv.fillstim, "Testfillstim", false, "fillstim for testing")
 	flag.BoolVar(&ss.TrainEnv.resetstim, "Trainresetstim", false, "resetstim for training")
 	flag.BoolVar(&ss.TestEnv.resetstim, "Testresetstim", false, "resetstim for testing")
+	flag.BoolVar(&ss.clearallstripes, "clearallstripes", false, "clear all stripes after recall")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
