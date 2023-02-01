@@ -1516,19 +1516,26 @@ func (ss *Sim) TrainTrial() {
 	ss.AlphaCyc(true)   // train
 	ss.TrialStats(true) // accumulate
 	ss.LogTrnTrl(ss.TrnTrlLog)
-	if ss.TrainEnv.CtrlInput.FloatVal1D(0) == 1 || ss.TrainEnv.CtrlInput.FloatVal1D(1) == 1 { //if it is a store trial
-		pc := popcode.Ring{}             //ring
-		pc.Defaults()                    //ring
-		pc.Min = ss.pop_min              //ring
-		pc.Max = ss.pop_max              //ring
-		pc.Sigma = float32(ss.pop_sigma) //ring
-		pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
-		pfc.UnitVals(&ss.TmpValsPFC, "Act")
-		ss.PFCmntD1Val = append(ss.PFCmntD1Val, pc.Decode(ss.TmpValsPFC[0*ss.LayerSize:(0+1)*ss.LayerSize])) //record the current pfcmntD1
-		ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
+	if ss.addstimloc {
+		if ss.TrainEnv.CtrlInput.FloatVal1D(0) == 1 || ss.TrainEnv.CtrlInput.FloatVal1D(1) == 1 { //if it is a store trial
+			pc := popcode.Ring{}             //ring
+			pc.Defaults()                    //ring
+			pc.Min = ss.pop_min              //ring
+			pc.Max = ss.pop_max              //ring
+			pc.Sigma = float32(ss.pop_sigma) //ring
+			pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+			pfc.UnitVals(&ss.TmpValsPFC, "Act")
+			ss.PFCmntD1Val = append(ss.PFCmntD1Val, pc.Decode(ss.TmpValsPFC[0*ss.LayerSize:(0+1)*ss.LayerSize])) //record the current pfcmntD1
+			ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
 
-		if ss.addstimloc {
 			ss.LocateItem(&ss.TrainEnv) //record the location of where the current store got saved.
+		}
+	}
+	if ss.clearallstripes {
+		if strings.Contains(ss.TrainEnv.String(), "Recall") {
+			pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+			pfc.InitActs()
+			ss.UpdateView(true)
 		}
 	}
 }
@@ -1895,20 +1902,28 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 		ss.UnLesionNet(ss.Net)
 		ss.LesionApplied = "no"
 	}
-	if ss.TestEnv.CtrlInput.FloatVal1D(0) == 1 || ss.TestEnv.CtrlInput.FloatVal1D(1) == 1 { //if it is a store trial
-		pc := popcode.Ring{}             //ring
-		pc.Defaults()                    //ring
-		pc.Min = ss.pop_min              //ring
-		pc.Max = ss.pop_max              //ring
-		pc.Sigma = float32(ss.pop_sigma) //ring
-		pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
-		pfc.UnitVals(&ss.TmpValsPFC, "Act")
-		ss.PFCmntD1Val = append(ss.PFCmntD1Val, pc.Decode(ss.TmpValsPFC[0*ss.LayerSize:(0+1)*ss.LayerSize])) //record the current pfcmntD1
-		ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
+	if ss.addstimloc {
+		if ss.TestEnv.CtrlInput.FloatVal1D(0) == 1 || ss.TestEnv.CtrlInput.FloatVal1D(1) == 1 { //if it is a store trial
+			pc := popcode.Ring{}             //ring
+			pc.Defaults()                    //ring
+			pc.Min = ss.pop_min              //ring
+			pc.Max = ss.pop_max              //ring
+			pc.Sigma = float32(ss.pop_sigma) //ring
+			pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+			pfc.UnitVals(&ss.TmpValsPFC, "Act")
+			ss.PFCmntD1Val = append(ss.PFCmntD1Val, pc.Decode(ss.TmpValsPFC[0*ss.LayerSize:(0+1)*ss.LayerSize])) //record the current pfcmntD1
+			ss.PFCmntD2Val = append(ss.PFCmntD2Val, pc.Decode(ss.TmpValsPFC[1*ss.LayerSize:(1+1)*ss.LayerSize])) //record the current pfcmntD2
 
-		if ss.addstimloc {
 			ss.LocateItem(&ss.TestEnv) //record the location of where the current store got saved.
 		}
+	}
+	if ss.clearallstripes {
+		if strings.Contains(ss.TestEnv.String(), "Recall") {
+			pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+			pfc.InitActs()
+			ss.UpdateView(true)
+		}
+
 	}
 }
 
