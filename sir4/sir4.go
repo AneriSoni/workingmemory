@@ -202,7 +202,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#PFCmntD",
 				Params: params.Params{
-					"Layer.Maint.OutClearMaint": "true",
+					"Layer.Maint.OutClearMaint": "false",
 				}},
 			{Sel: "#Input", Desc: "Basic params",
 				Params: params.Params{
