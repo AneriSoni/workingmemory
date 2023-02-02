@@ -3024,6 +3024,7 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TrainEnv.resetstim, "Trainresetstim", false, "resetstim for training")
 	flag.BoolVar(&ss.TestEnv.resetstim, "Testresetstim", false, "resetstim for testing")
 	flag.BoolVar(&ss.clearallstripes, "clearallstripes", false, "clear all stripes after recall")
+	flag.BoolVar(&ss.addstimloc, "addstimloc", false, "stimulus location layer")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
