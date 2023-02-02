@@ -512,7 +512,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.fillstim = false        //this makes it so that all stimuli have to be filled before recall trial.
 	ss.resetstim = false       //reset stimuli to -1 after recall trial.
 	ss.clearallstripes = false // clears all stripesafter recall trial //this has not been fully developed yet.
-	ss.addstimloc = false
+	ss.addstimloc = true
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
@@ -723,6 +723,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	}
 
 	if ss.addstimloc {
+		//fmt.Printf("added stimuloc")
 		stimloc := net.AddLayer2D("StimLoc", 1, ss.Stripes, emer.Input)
 		stimloc.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: "CtrlInput", YAlign: relpos.Front, Space: 1})
 		net.ConnectLayersPrjn(stimloc, rp, full, emer.Forward, &rl.RWPrjn{})
@@ -3024,7 +3025,6 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TrainEnv.resetstim, "Trainresetstim", false, "resetstim for training")
 	flag.BoolVar(&ss.TestEnv.resetstim, "Testresetstim", false, "resetstim for testing")
 	flag.BoolVar(&ss.clearallstripes, "clearallstripes", false, "clear all stripes after recall")
-	flag.BoolVar(&ss.addstimloc, "addstimloc", false, "stimulus location layer")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
