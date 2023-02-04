@@ -1471,6 +1471,26 @@ func (ss *Sim) TrainTrial() {
 		ss.NewRun()
 	}
 
+	if ss.Lesion != "None" {
+		comp := rand.Float64()
+		if comp < ss.LesionProp {
+			ss.LesionApplied = "yes"
+
+			if ss.Lesion == "PFC" {
+				ss.Net.LayerByName("PFCoutD").SetOff(true)
+			}
+			if ss.Lesion == "Hidden" {
+				ss.Net.LayerByName("Hidden").SetOff(true)
+			}
+			if ss.Lesion == "PFCHidden" {
+				ss.Net.LayerByName("PFCoutD").SetOff(true)
+				ss.Net.LayerByName("Hidden").SetOff(true)
+			}
+
+		}
+
+	}
+
 	if ss.Lesion == "StimLoc" {
 		ss.Net.LayerByName("StimLoc").SetOff(true)
 	}
