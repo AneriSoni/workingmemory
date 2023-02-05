@@ -1494,6 +1494,9 @@ func (ss *Sim) TrainTrial() {
 	if ss.Lesion == "StimLoc" {
 		ss.Net.LayerByName("StimLoc").SetOff(true)
 	}
+	if ss.Lesion == "Hidden" {
+		ss.Net.LayerByName("Hidden").SetOff(true)
+	}
 
 	ss.TrainEnv.Step() // the Env encapsulates and manages all counter state
 
@@ -1879,27 +1882,30 @@ func (ss *Sim) UnLesionNet(net *pbwm.Network) {
 
 // TestTrial runs one trial of testing -- always sequentially presented inputs
 func (ss *Sim) TestTrial(returnOnChg bool) {
-	if ss.Lesion != "None" {
-		comp := rand.Float64()
-		if comp < ss.LesionProp {
-			ss.LesionApplied = "yes"
+	// if ss.Lesion != "None" {
+	// 	comp := rand.Float64()
+	// 	if comp < ss.LesionProp {
+	// 		ss.LesionApplied = "yes"
 
-			if ss.Lesion == "PFC" {
-				ss.Net.LayerByName("PFCoutD").SetOff(true)
-			}
-			if ss.Lesion == "Hidden" {
-				ss.Net.LayerByName("Hidden").SetOff(true)
-			}
-			if ss.Lesion == "PFCHidden" {
-				ss.Net.LayerByName("PFCoutD").SetOff(true)
-				ss.Net.LayerByName("Hidden").SetOff(true)
-			}
+	// 		if ss.Lesion == "PFC" {
+	// 			ss.Net.LayerByName("PFCoutD").SetOff(true)
+	// 		}
+	// 		if ss.Lesion == "Hidden" {
+	// 			ss.Net.LayerByName("Hidden").SetOff(true)
+	// 		}
+	// 		if ss.Lesion == "PFCHidden" {
+	// 			ss.Net.LayerByName("PFCoutD").SetOff(true)
+	// 			ss.Net.LayerByName("Hidden").SetOff(true)
+	// 		}
 
-		}
+	// 	}
 
-	}
+	// }
 	if ss.Lesion == "StimLoc" {
 		ss.Net.LayerByName("StimLoc").SetOff(true)
+	}
+	if ss.Lesion == "Hidden" {
+		ss.Net.LayerByName("Hidden").SetOff(true)
 	}
 
 	ss.TestEnv.Step()
