@@ -512,7 +512,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.fillstim = false        //this makes it so that all stimuli have to be filled before recall trial.
 	ss.resetstim = false       //reset stimuli to -1 after recall trial.
 	ss.clearallstripes = false // clears all stripesafter recall trial //this has not been fully developed yet.
-	ss.addstimloc = true
+	ss.addstimloc = false
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
