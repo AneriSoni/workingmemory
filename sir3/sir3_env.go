@@ -67,6 +67,8 @@ type SIREnv struct {
 	OneR         bool `desc:" if this is true, then there is only 1 R and we reactivate the corresponding store unit. "`
 	fillstim     bool `desc:" if this is true, then need to fill all stim before recall. "`
 	resetstim    bool `desc:" if this is true, then reset all stim after recall trial. "`
+	uniformstim  bool `desc:" if this is true, then all stim will be 120 away from each other. "`
+	chunkstim    bool `desc:" if this is true, then first two stim will be close (between 0 and 20 away from each other) and third will be more than 50 away. "`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }
@@ -276,6 +278,7 @@ func (ev *SIREnv) StepSIR() {
 	//ev.Stim = rand.Intn(ev.NStim)
 	//ev.Stim = (float64(rand.Intn(ev.NStim))+rand.Float64())
 	//ev.Stim = rand.Float64()*float64(3)
+
 	if ev.StimType == "Cont" {
 		//ev.Stim = 0.3+rand.Float64()*float64(ev.NStim-1+0.3)
 		//ev.Stim = 0.4 + rand.Float64()*float64(3) no ring
@@ -284,6 +287,101 @@ func (ev *SIREnv) StepSIR() {
 	}
 	if ev.StimType == "Fixed" {
 		ev.Stim = float64(rand.Intn(ev.NStim))
+
+	}
+	if ev.uniformstim {
+		if ev.Maint1 < 0 && ev.Maint2 < 0 && ev.Maint3 < 0 {
+			//the random stim selected is fine
+		} else {
+			if ev.Act == Store1 {
+				if ev.Maint2 < 0 && ev.Maint3 >= 0 { //2 is empty and 3 is filled
+					ev.Stim = math.Mod(ev.Maint3+120, 360)
+				}
+				if ev.Maint2 >= 0 && ev.Maint3 < 0 { //3 is empty and 2 is filled
+					ev.Stim = math.Mod(ev.Maint2+120, 360)
+				}
+				if ev.Maint2 >= 0 && ev.Maint3 >= 0 { //both filled, need to figure out which one to add to
+					if math.Mod(ev.Maint2+120, 360) == ev.Maint3 {
+						ev.Stim = math.Mod(ev.Maint3+120, 360)
+					} else {
+						ev.Stim = math.Mod(ev.Maint2+120, 360)
+					}
+				}
+			}
+			if ev.Act == Store2 {
+				if ev.Maint1 < 0 && ev.Maint3 >= 0 { //1 is empty and 3 is filled
+					ev.Stim = math.Mod(ev.Maint3+120, 360)
+				}
+				if ev.Maint1 >= 0 && ev.Maint3 < 0 { //3 is empty and 1 is filled
+					ev.Stim = math.Mod(ev.Maint1+120, 360)
+				}
+				if ev.Maint1 >= 0 && ev.Maint3 >= 0 { //both filled, need to figure out which one to add to
+					if math.Mod(ev.Maint1+120, 360) == ev.Maint3 {
+						ev.Stim = math.Mod(ev.Maint3+120, 360)
+					} else {
+						ev.Stim = math.Mod(ev.Maint1+120, 360)
+					}
+				}
+
+			}
+			if ev.Act == Store3 {
+				if ev.Maint1 < 0 && ev.Maint2 >= 0 { //1 is empty and 2 is filled
+					ev.Stim = math.Mod(ev.Maint2+120, 360)
+				}
+				if ev.Maint1 >= 0 && ev.Maint2 < 0 { //2 is empty and 1 is filled
+					ev.Stim = math.Mod(ev.Maint1+120, 360)
+				}
+				if ev.Maint1 >= 0 && ev.Maint2 >= 0 { //both filled, need to figure out which one to add to
+					if math.Mod(ev.Maint1+120, 360) == ev.Maint2 {
+						ev.Stim = math.Mod(ev.Maint2+120, 360)
+					} else {
+						ev.Stim = math.Mod(ev.Maint1+120, 360)
+					}
+				}
+
+			}
+		}
+
+	}
+
+	if ev.chunkstim {
+		if ev.Act == Store1 {
+			if ev.Maint2 >= 0 && ev.Maint3 < 0 { //2 is filled and 3 is empty
+				ev.Stim = math.Mod(ev.Maint2+(rand.Float64()*float64(20)), 360)
+			}
+			if ev.Maint2 < 0 && ev.Maint3 >= 0 { //3 is filled, 2 is empty
+				ev.Stim = math.Mod(ev.Maint3+(rand.Float64()*float64(20)), 360)
+			}
+			if ev.Maint2 >= 0 && ev.Maint3 >= 0 { //both filled, 3rd stim is further away
+				ev.Stim = math.Mod(ev.Maint3+(rand.Float64()*float64(130)+float64(50)), 360) //need to add some number 50 to 180 to it.
+			}
+		}
+
+		if ev.Act == Store2 {
+			if ev.Maint1 >= 0 && ev.Maint3 < 0 { //1 is filled and 3 is empty
+				ev.Stim = math.Mod(ev.Maint1+(rand.Float64()*float64(20)), 360)
+			}
+			if ev.Maint1 < 0 && ev.Maint3 >= 0 { //3 is filled, 1 is empty
+				ev.Stim = math.Mod(ev.Maint3+(rand.Float64()*float64(20)), 360)
+			}
+			if ev.Maint1 >= 0 && ev.Maint3 >= 0 { //both filled, 3rd stim is further away
+				ev.Stim = math.Mod(ev.Maint3+(rand.Float64()*float64(130)+float64(50)), 360) //need to add some number 50 to 180 to it.
+			}
+
+		}
+
+		if ev.Act == Store3 {
+			if ev.Maint1 >= 0 && ev.Maint2 < 0 { //1 is filled and 2 is empty
+				ev.Stim = math.Mod(ev.Maint1+(rand.Float64()*float64(20)), 360)
+			}
+			if ev.Maint1 < 0 && ev.Maint2 >= 0 { //2 is filled, 1 is empty
+				ev.Stim = math.Mod(ev.Maint2+(rand.Float64()*float64(20)), 360)
+			}
+			if ev.Maint1 >= 0 && ev.Maint2 >= 0 { //both filled, 3rd stim is further away
+				ev.Stim = math.Mod(ev.Maint2+(rand.Float64()*float64(130)+float64(50)), 360) //need to add some number 50 to 180 to it.
+			}
+
+		}
 
 	}
 

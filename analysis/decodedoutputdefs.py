@@ -393,7 +393,7 @@ class Precision():
         for f in files:
             dat = dat.append(pd.read_csv(f,sep=sep))
         self.dat = dat
-
+        #import pdb; pdb.set_trace()
         _,diffrecall = self.get_diffs(dat, nonresponse = nonresponse)
         self.diffrecall = diffrecall
         return diffrecall
