@@ -66,6 +66,8 @@ type SIREnv struct {
 	OneR         bool `desc:" if this is true, then there is only 1 R and we reactivate the corresponding store unit. "`
 	fillstim     bool `desc:" if this is true, then need to fill all stim before recall. "`
 	resetstim    bool `desc:" if this is true, then reset all stim after recall trial. "`
+	uniformstim  bool `desc:" if this is true, then all stim will be 120 away from each other. "`
+	chunkstim    bool `desc:" if this is true, then first two stim will be close (between 0 and 20 away from each other) and third will be more than 50 away. "`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }

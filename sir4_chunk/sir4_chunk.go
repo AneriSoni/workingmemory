@@ -352,8 +352,11 @@ type Sim struct {
 	fillstim        bool `desc:" if this is true, then need to fill all stim before recall. "`
 	resetstim       bool `desc:" if this is true, then the stim will be reset after a recall. "`
 	clearallstripes bool `desc:" if this is true, then the all stripes will be cleared after a recall trial. "`
+	uniformstim     bool `desc:" if this is true, then the stim are uniformly distributed across the circle. "`
+	chunkstim       bool `desc:" if this is true, then 2 stim are close together and third is further apart. "`
 
-	NoGo float64 `desc: "the gate value, NoGo "`
+	TestTrls int     `desc:" tells the number of test trials, default 700 "`
+	NoGo     float64 `desc: "the gate value, NoGo "`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -513,6 +516,9 @@ func (ss *Sim) ConfigEnv() {
 	ss.resetstim = false       //reset stimuli to -1 after recall trial.
 	ss.clearallstripes = false // clears all stripesafter recall trial //this has not been fully developed yet.
 	ss.addstimloc = false
+	ss.uniformstim = false // uniform stim across circle
+	ss.chunkstim = false   //chunksbale 2 stim first and 3rd unchunkable
+	ss.TestTrls = 700
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
@@ -531,6 +537,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.OneR = ss.OneR
 	ss.TrainEnv.fillstim = ss.fillstim
 	ss.TrainEnv.resetstim = ss.resetstim
+	ss.TrainEnv.uniformstim = ss.uniformstim
+	ss.TrainEnv.chunkstim = ss.chunkstim
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
@@ -538,8 +546,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.RewVal = 1
 	ss.TestEnv.NoRewVal = 0
 	ss.TestEnv.Validate()
-	ss.TestEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
-	ss.TestEnv.Trial.Max = 700      // good amount for testing
+	ss.TestEnv.Run.Max = ss.MaxRuns    // note: we are not setting epoch max -- do that manually
+	ss.TestEnv.Trial.Max = ss.TestTrls // good amount for testing
 	ss.TestEnv.StimType = "Cont"
 	ss.TestEnv.StimDist = "false" //will be defined in the tag
 	ss.TestEnv.MaxDist = 45
@@ -549,6 +557,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.OneR = ss.OneR
 	ss.TestEnv.fillstim = ss.fillstim
 	ss.TestEnv.resetstim = ss.resetstim
+	ss.TestEnv.uniformstim = ss.uniformstim
+	ss.TestEnv.chunkstim = ss.chunkstim
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
@@ -3051,6 +3061,7 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TrainEnv.resetstim, "Trainresetstim", false, "resetstim for training")
 	flag.BoolVar(&ss.TestEnv.resetstim, "Testresetstim", false, "resetstim for testing")
 	flag.BoolVar(&ss.clearallstripes, "clearallstripes", false, "clear all stripes after recall")
+	flag.IntVar(&ss.TestEnv.Trial.Max, "TestTrls", 700, "number of test trials")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
@@ -3183,6 +3194,38 @@ func (ss *Sim) CmdArgs() {
 				ss.TrainRun()
 				ss.RunTestAll("")
 			}
+		}
+
+	} else if ss.Experiment == "uniformvschunk" {
+		ss.TestEnv.fillstim = true
+		ss.TestEnv.resetstim = true
+		for _, v := range models {
+			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+			if ss.chunklay == true {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "chunkhybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			} else {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			}
+
+			//ss.Tag = "model"+strconv.Itoa(v)
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+
+			ss.clearallstripes = true
+
+			//test with uniform trials
+			ss.TestEnv.uniformstim = true
+			ss.Folder = ss.Folder + "uniformtrials/"
+			ss.RunTestAll("")
+			ss.Folder = strings.Replace(ss.Folder, "uniformtrials/", "", 1)
+
+			//test with chunkable trials
+			ss.TestEnv.chunkstim = true
+			ss.Folder = ss.Folder + "chunktrials/"
+			ss.RunTestAll("")
+			ss.Folder = strings.Replace(ss.Folder, "chunktrials/", "", 1)
+
+			ss.clearallstripes = false //need to set to false for the next model to train
 		}
 
 	} else if ss.Experiment == "RewThres" {
