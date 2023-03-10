@@ -355,7 +355,8 @@ type Sim struct {
 	uniformstim     bool `desc:" if this is true, then the stim are uniformly distributed across the circle. "`
 	chunkstim       bool `desc:" if this is true, then 2 stim are close together and third is further apart. "`
 
-	NoGo float64 `desc: "the gate value, NoGo "`
+	TestTrls int     `desc:" tells the number of test trials, default 700 "`
+	NoGo     float64 `desc: "the gate value, NoGo "`
 
 	TrlDA         float64 `inactive:"+" desc:"dopamine level on this trial"`
 	TrlAbsDA      float64 `inactive:"+" desc:"absolute value of dopamine on this trial"`
@@ -517,6 +518,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.addstimloc = false
 	ss.uniformstim = false // uniform stim across circle
 	ss.chunkstim = false   //chunksbale 2 stim first and 3rd unchunkable
+	ss.TestTrls = 700
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
@@ -544,8 +546,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.RewVal = 1
 	ss.TestEnv.NoRewVal = 0
 	ss.TestEnv.Validate()
-	ss.TestEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
-	ss.TestEnv.Trial.Max = 700      // good amount for testing
+	ss.TestEnv.Run.Max = ss.MaxRuns    // note: we are not setting epoch max -- do that manually
+	ss.TestEnv.Trial.Max = ss.TestTrls // good amount for testing
 	ss.TestEnv.StimType = "Cont"
 	ss.TestEnv.StimDist = "false" //will be defined in the tag
 	ss.TestEnv.MaxDist = 45
@@ -3059,6 +3061,7 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TrainEnv.resetstim, "Trainresetstim", false, "resetstim for training")
 	flag.BoolVar(&ss.TestEnv.resetstim, "Testresetstim", false, "resetstim for testing")
 	flag.BoolVar(&ss.clearallstripes, "clearallstripes", false, "clear all stripes after recall")
+	flag.IntVar(&ss.TestEnv.Trial.Max, "TestTrls", 700, "number of test trials")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
