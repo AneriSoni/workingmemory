@@ -3218,14 +3218,15 @@ func (ss *Sim) CmdArgs() {
 			ss.Folder = ss.Folder + "uniformtrials/"
 			ss.RunTestAll("")
 			ss.Folder = strings.Replace(ss.Folder, "uniformtrials/", "", 1)
+			ss.TestEnv.uniformstim = false
 
 			//test with chunkable trials
 			ss.TestEnv.chunkstim = true
 			ss.Folder = ss.Folder + "chunktrials/"
 			ss.RunTestAll("")
 			ss.Folder = strings.Replace(ss.Folder, "chunktrials/", "", 1)
-
 			ss.clearallstripes = false //need to set to false for the next model to train
+			ss.TestEnv.chunkstim = false
 		}
 
 	} else if ss.Experiment == "RewThres" {
