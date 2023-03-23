@@ -3062,6 +3062,7 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TestEnv.resetstim, "Testresetstim", false, "resetstim for testing")
 	flag.BoolVar(&ss.clearallstripes, "clearallstripes", false, "clear all stripes after recall")
 	flag.IntVar(&ss.TestEnv.Trial.Max, "TestTrls", 700, "number of test trials")
+	flag.BoolVar(&ss.TestEnv.chunkstim, "Testchunkstim", false, "tells if testing trials will have chunkable stim")
 
 	//	flag.IntVar(&ss.Stripes, "Stripes",2,"Number of PFC Stripes")
 	flag.Parse()
