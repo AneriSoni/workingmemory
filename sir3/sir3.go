@@ -3230,6 +3230,31 @@ func (ss *Sim) CmdArgs() {
 			ss.TestEnv.chunkstim = false
 		}
 
+	} else if ss.Experiment == "teststimchunk" {
+		ss.TestEnv.fillstim = true
+		ss.TestEnv.resetstim = true
+		for _, v := range models {
+			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+			if ss.chunklay == true {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "chunkhybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			} else {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			}
+
+			//ss.Tag = "model"+strconv.Itoa(v)
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+
+			ss.clearallstripes = true
+
+			//test with chunkable trials
+			ss.TestEnv.chunkstim = true
+			ss.Folder = ss.Folder + "chunktrials/"
+			ss.RunTestAll("")
+			ss.Folder = strings.Replace(ss.Folder, "chunktrials/", "", 1)
+			ss.clearallstripes = false //need to set to false for the next model to train
+		}
+
 	} else if ss.Experiment == "RewThres" {
 
 		RewThresholds := []float64{0.5, 1, 1.5, 2, 2.5, 3, 3.5}
