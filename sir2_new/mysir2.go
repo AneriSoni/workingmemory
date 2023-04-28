@@ -581,7 +581,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no"
 
 	ss.LayerSize = 20
-	ss.Stripes = 2
+	ss.Stripes = 8
 
 	ss.StimStripe = make([][]float64, ss.Stripes)
 	for i := range ss.StimStripe {
@@ -685,6 +685,18 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	fmintop.RecvStart.Set(0, 1)
 	fmintop.Wrap = true
 
+	fminbot2 := prjn.NewRect()
+	fminbot2.Size.Set(1, 1)
+	fminbot2.Scale.Set(1, 1)
+	fminbot2.Wrap = true
+	fminbot2.RecvN.Set(20, 4)
+
+	fmintop2 := prjn.NewRect()
+	fmintop2.Size.Set(1, 1)
+	fmintop2.Scale.Set(1, 1)
+	fmintop2.RecvStart.Set(0, 4)
+	fmintop2.Wrap = true
+
 	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
 	net.ConnectLayersPrjn(pfcOutD, rp, full, emer.Forward, &rl.RWPrjn{})
@@ -695,7 +707,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("MatrixPrjn")
 
 	if ss.chunklay == true {
-		pj = net.ConnectLayers(inp, pfcMnt, fmintop, emer.Forward) //hybrid model
+		pj = net.ConnectLayers(inp, pfcMnt, fmintop2, emer.Forward) //hybrid model
 		//pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward) //original model
 	} else {
 		pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward)
@@ -724,7 +736,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 		pj = net.ConnectLayers(pfcMntD, chunk, fmin2, emer.Forward) //original model
 		//pj = net.ConnectLayers(pfcMntD, chunk, fminbot, emer.Forward) //hybrid model, connect to only 1 pfc layer
 		pj.SetClass("PFCMntDChunk")
-		pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
+		pj = net.ConnectLayers(chunk, pfcMnt, fminbot2, emer.Forward) //hybrid model
 		//pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
 		pj.SetClass("PFCFixedChunk")
 
@@ -3219,13 +3231,39 @@ func (ss *Sim) CmdArgs() {
 			ss.Folder = ss.Folder + "uniformtrials/"
 			ss.RunTestAll("")
 			ss.Folder = strings.Replace(ss.Folder, "uniformtrials/", "", 1)
+			ss.TestEnv.uniformstim = false
 
 			//test with chunkable trials
 			ss.TestEnv.chunkstim = true
 			ss.Folder = ss.Folder + "chunktrials/"
 			ss.RunTestAll("")
 			ss.Folder = strings.Replace(ss.Folder, "chunktrials/", "", 1)
+			ss.clearallstripes = false //need to set to false for the next model to train
+			ss.TestEnv.chunkstim = false
+		}
 
+	} else if ss.Experiment == "teststimchunk" {
+		ss.TestEnv.fillstim = true
+		ss.TestEnv.resetstim = true
+		for _, v := range models {
+			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
+			if ss.chunklay == true {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "chunkhybridmodel" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			} else {
+				ss.Tag = "sir" + strconv.Itoa(ss.SirTask) + "model" + strconv.Itoa(v) + "_RewThreshold" + strconv.FormatFloat(ss.RewThreshold, 'G', -1, 64) + "_" + ss.RewardFunction
+			}
+
+			//ss.Tag = "model"+strconv.Itoa(v)
+			fmt.Printf(ss.Tag)
+			ss.TrainRun()
+
+			ss.clearallstripes = true
+
+			//test with chunkable trials
+			ss.TestEnv.chunkstim = true
+			ss.Folder = ss.Folder + "chunktrials/"
+			ss.RunTestAll("")
+			ss.Folder = strings.Replace(ss.Folder, "chunktrials/", "", 1)
 			ss.clearallstripes = false //need to set to false for the next model to train
 		}
 
