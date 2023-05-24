@@ -345,15 +345,16 @@ type Sim struct {
 	chunklay   bool        `desc: "tells if there will be chunk or not. "`
 	addstimloc bool        `desc: "tells if there will be stimloc layer. "`
 
-	IgnoreTr        bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
-	NumStimConst    int  `desc: "tells how many stimuli the model will get to see "`
-	OneR            bool `desc: "this is the version for when there is only 1 recall unit and then we will re-stimulate the store unit. "`
-	testint         bool `desc: "testing during the training. "`
-	fillstim        bool `desc:" if this is true, then need to fill all stim before recall. "`
-	resetstim       bool `desc:" if this is true, then the stim will be reset after a recall. "`
-	clearallstripes bool `desc:" if this is true, then the all stripes will be cleared after a recall trial. "`
-	uniformstim     bool `desc:" if this is true, then the stim are uniformly distributed across the circle. "`
-	chunkstim       bool `desc:" if this is true, then 2 stim are close together and third is further apart. "`
+	IgnoreTr             bool `desc: "tells if there will be ignore trials or not. true = yes there will be, false = no there won't be "`
+	NumStimConst         int  `desc: "tells how many stimuli the model will get to see "`
+	OneR                 bool `desc: "this is the version for when there is only 1 recall unit and then we will re-stimulate the store unit. "`
+	testint              bool `desc: "testing during the training. "`
+	fillstim             bool `desc:" if this is true, then need to fill all stim before recall. "`
+	resetstim            bool `desc:" if this is true, then the stim will be reset after a recall. "`
+	trainclearallstripes bool `desc:" if this is true, then the all stripes will be cleared after a recall trial for training. "`
+	testclearallstripes  bool `desc:" if this is true, then the all stripes will be cleared after a recall trial for testing. "`
+	uniformstim          bool `desc:" if this is true, then the stim are uniformly distributed across the circle. "`
+	chunkstim            bool `desc:" if this is true, then 2 stim are close together and third is further apart. "`
 
 	TestTrls int     `desc:" tells the number of test trials, default 700 "`
 	NoGo     float64 `desc: "the gate value, NoGo "`
@@ -511,10 +512,11 @@ func (ss *Sim) ConfigEnv() {
 	ss.chunklay = true
 	ss.NumStimConst = ss.SirTask
 	//fmt.Printf("Numconst: %v ;", ss.NumStimConst)
-	ss.OneR = true             //this makes it so that there is one recall type.
-	ss.fillstim = false        //this makes it so that all stimuli have to be filled before recall trial.
-	ss.resetstim = false       //reset stimuli to -1 after recall trial.
-	ss.clearallstripes = false // clears all stripesafter recall trial //this has not been fully developed yet.
+	ss.OneR = true                  //this makes it so that there is one recall type.
+	ss.fillstim = false             //this makes it so that all stimuli have to be filled before recall trial.
+	ss.resetstim = false            //reset stimuli to -1 after recall trial.
+	ss.trainclearallstripes = false // clears all stripesafter recall trial for train //this has not been fully developed yet.
+	ss.testclearallstripes = false  // clears all stripesafter recall trial for train //this has not been fully developed yet.
 	ss.addstimloc = false
 	ss.uniformstim = false // uniform stim across circle
 	ss.chunkstim = false   //chunksbale 2 stim first and 3rd unchunkable
@@ -1577,7 +1579,7 @@ func (ss *Sim) TrainTrial() {
 			ss.LocateItem(&ss.TrainEnv) //record the location of where the current store got saved.
 		}
 	}
-	if ss.clearallstripes {
+	if ss.trainclearallstripes {
 		if strings.Contains(ss.TrainEnv.String(), "Recall") {
 			pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 			pfc.InitActs()
@@ -1966,7 +1968,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 			ss.LocateItem(&ss.TestEnv) //record the location of where the current store got saved.
 		}
 	}
-	if ss.clearallstripes {
+	if ss.testclearallstripes {
 		if strings.Contains(ss.TestEnv.String(), "Recall") {
 			pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
 			pfc.InitActs()
@@ -3072,7 +3074,8 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.TestEnv.fillstim, "Testfillstim", false, "fillstim for testing")
 	flag.BoolVar(&ss.TrainEnv.resetstim, "Trainresetstim", false, "resetstim for training")
 	flag.BoolVar(&ss.TestEnv.resetstim, "Testresetstim", false, "resetstim for testing")
-	flag.BoolVar(&ss.clearallstripes, "clearallstripes", false, "clear all stripes after recall")
+	flag.BoolVar(&ss.trainclearallstripes, "trainclearallstripes", false, "clear all stripes after recall for train")
+	flag.BoolVar(&ss.testclearallstripes, "testclearallstripes", false, "clear all stripes after recall for test")
 	flag.IntVar(&ss.TestEnv.Trial.Max, "TestTrls", 700, "number of test trials")
 	flag.BoolVar(&ss.TestEnv.chunkstim, "Testchunkstim", false, "tells if testing trials will have chunkable stim")
 
@@ -3212,6 +3215,7 @@ func (ss *Sim) CmdArgs() {
 	} else if ss.Experiment == "uniformvschunk" {
 		ss.TestEnv.fillstim = true
 		ss.TestEnv.resetstim = true
+		ss.testclearallstripes = true
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
 			if ss.chunklay == true {
@@ -3223,8 +3227,6 @@ func (ss *Sim) CmdArgs() {
 			//ss.Tag = "model"+strconv.Itoa(v)
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
-
-			ss.clearallstripes = true
 
 			//test with uniform trials
 			ss.TestEnv.uniformstim = true
@@ -3238,13 +3240,14 @@ func (ss *Sim) CmdArgs() {
 			ss.Folder = ss.Folder + "chunktrials/"
 			ss.RunTestAll("")
 			ss.Folder = strings.Replace(ss.Folder, "chunktrials/", "", 1)
-			ss.clearallstripes = false //need to set to false for the next model to train
+
 			ss.TestEnv.chunkstim = false
 		}
 
 	} else if ss.Experiment == "teststimchunk" {
 		ss.TestEnv.fillstim = true
 		ss.TestEnv.resetstim = true
+		ss.testclearallstripes = true
 		for _, v := range models {
 			//	//ss.Tag = "model"+strconv.Itoa(v)+"_Lesion"+ss.Lesion+"_LesionProp"+strconv.FormatFloat(ss.LesionProp,'G',-1,64)
 			if ss.chunklay == true {
@@ -3257,14 +3260,11 @@ func (ss *Sim) CmdArgs() {
 			fmt.Printf(ss.Tag)
 			ss.TrainRun()
 
-			ss.clearallstripes = true
-
 			//test with chunkable trials
 			ss.TestEnv.chunkstim = true
 			ss.Folder = ss.Folder + "chunktrials/"
 			ss.RunTestAll("")
 			ss.Folder = strings.Replace(ss.Folder, "chunktrials/", "", 1)
-			ss.clearallstripes = false //need to set to false for the next model to train
 		}
 
 	} else if ss.Experiment == "RewThres" {
