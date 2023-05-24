@@ -581,7 +581,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no"
 
 	ss.LayerSize = 20
-	ss.Stripes = 8
+	ss.Stripes = 2
 
 	ss.StimStripe = make([][]float64, ss.Stripes)
 	for i := range ss.StimStripe {
@@ -707,7 +707,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("MatrixPrjn")
 
 	if ss.chunklay == true {
-		pj = net.ConnectLayers(inp, pfcMnt, fmintop2, emer.Forward) //hybrid model
+		pj = net.ConnectLayers(inp, pfcMnt, fmintop, emer.Forward) //hybrid model
 		//pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward) //original model
 	} else {
 		pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward)
@@ -736,7 +736,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 		pj = net.ConnectLayers(pfcMntD, chunk, fmin2, emer.Forward) //original model
 		//pj = net.ConnectLayers(pfcMntD, chunk, fminbot, emer.Forward) //hybrid model, connect to only 1 pfc layer
 		pj.SetClass("PFCMntDChunk")
-		pj = net.ConnectLayers(chunk, pfcMnt, fminbot2, emer.Forward) //hybrid model
+		pj = net.ConnectLayers(chunk, pfcMnt, fminbot, emer.Forward) //hybrid model
 		//pj = net.ConnectLayers(chunk, pfcMnt, fmin, emer.Forward) //original model
 		pj.SetClass("PFCFixedChunk")
 
