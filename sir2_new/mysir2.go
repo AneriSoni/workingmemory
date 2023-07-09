@@ -2396,7 +2396,7 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 		dt.SetCellFloat(stnm, row, float64(pfcdecode))
 	}
 
-	pfc.UnitVals(&ss.TmpValsPFCout, "Act")
+	pfcoutd.UnitVals(&ss.TmpValsPFCout, "Act")
 	for stripe := 0; stripe < ss.Stripes; stripe++ {
 		pfcdecode := pc.Decode(ss.TmpValsPFCout[stripe*ss.LayerSize : (stripe+1)*ss.LayerSize])
 		stnm := "outstripe" + string(stripe)
@@ -2504,7 +2504,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	inp := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
 	//chunk := ss.Net.LayerByName("Chunk").(leabra.LeabraLayer).AsLeabra()
 	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
-
+	pfcoutd := ss.Net.LayerByName("PFCoutD").(leabra.LeabraLayer).AsLeabra()
 	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
 	//pc.Defaults() //no ring
 	//pc.SetRange(ss.pop_min,ss.pop_max,float32(ss.pop_sigma)) //does not say to add these two //no ring
@@ -2567,7 +2567,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		stnm := "stripe" + string(stripe)
 		dt.SetCellFloat(stnm, row, float64(pfcdecode))
 	}
-	pfc.UnitVals(&ss.TmpValsPFCout, "Act")
+	pfcoutd.UnitVals(&ss.TmpValsPFCout, "Act")
 	for stripe := 0; stripe < ss.Stripes; stripe++ {
 		pfcdecode := pc.Decode(ss.TmpValsPFCout[stripe*ss.LayerSize : (stripe+1)*ss.LayerSize])
 		stnm := "outstripe" + string(stripe)
