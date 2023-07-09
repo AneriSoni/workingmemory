@@ -320,12 +320,13 @@ type Sim struct {
 	InOneTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
 	InTwoTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
 
-	TmpVals    []float32 `view:"-" desc:"for holding decoded layer values"`
-	TmpVals2   []float32 `view:"-" desc:"for holding decoded layer values"`
-	TmpValsInp []float32 `view:"-" desc:"for holding decoded layer values"`
-	TmpValsCh  []float32 `view:"-" desc:"for holding decoded layer values"`
-	TmpValsPFC []float32 `view:"-" desc:"for holding decoded layer values"`
-	TmpValsGpi []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpVals       []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpVals2      []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsInp    []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsCh     []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsPFC    []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsPFCout []float32 `view:"-" desc:"for holding decoded layer values"`
+	TmpValsGpi    []float32 `view:"-" desc:"for holding decoded layer values"`
 
 	PFCmntD1Val []float32 `view:"-" desc:"for pfcmntD stripe 1 (bottom) values"`
 	PFCmntD2Val []float32 `view:"-" desc:"for pfcmntD stripe 2 (top) values"`
@@ -578,12 +579,12 @@ func (ss *Sim) ConfigEnv() {
 	ss.RewardType = "contlinear"  //need to change back to ""
 	ss.denom = 20.0
 
-	ss.Lesion = "None" //need to change back to "None"
+	ss.Lesion = "Hidden" //need to change back to "None"
 	ss.LesionProp = 0
 	ss.LesionApplied = "no"
 
 	ss.LayerSize = 20
-	ss.Stripes = 2
+	ss.Stripes = 8
 
 	ss.StimStripe = make([][]float64, ss.Stripes)
 	for i := range ss.StimStripe {
@@ -1717,11 +1718,11 @@ func (ss *Sim) TrainRun() {
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-				fnm2 = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				path = "/oscar/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/oscar/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
 		}
 		if ss.SirTask == 3 {
@@ -1730,11 +1731,11 @@ func (ss *Sim) TrainRun() {
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-				fnm2 = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				path = "/oscar/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/oscar/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
 		}
 		if ss.SirTask == 4 {
@@ -1743,11 +1744,11 @@ func (ss *Sim) TrainRun() {
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-				fnm2 = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				path = "/oscar/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/oscar/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
 		}
 	} else {
@@ -1757,11 +1758,11 @@ func (ss *Sim) TrainRun() {
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-				fnm2 = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				path = "/oscar/data/frankmj/asoni4/sir2_new/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/oscar/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
 		}
 		if ss.SirTask == 3 {
@@ -1770,11 +1771,11 @@ func (ss *Sim) TrainRun() {
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-				fnm2 = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				path = "/oscar/data/frankmj/asoni4/sir3/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/oscar/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
 		}
 		if ss.SirTask == 4 {
@@ -1783,16 +1784,16 @@ func (ss *Sim) TrainRun() {
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				fnm2 = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-				fnm2 = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				path = "/oscar/data/frankmj/asoni4/sir4/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+				fnm2 = "/oscar/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + "TrialLog.csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 			}
 		}
 
 	}
-	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+	//fnm := "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 	err2 := os.MkdirAll(path, os.ModePerm)
 	if err2 != nil {
 		log.Println(err2)
@@ -1997,7 +1998,7 @@ func (ss *Sim) RunTestAll(add_fnm string) {
 
 	////fnm := "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/"+ss.RunName()+".csv"
 
-	//fnm := "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+	//fnm := "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 	fnm := ""
 	path := ""
 	if ss.chunklay == true {
@@ -2006,10 +2007,10 @@ func (ss *Sim) RunTestAll(add_fnm string) {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+				path = "/oscar/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 			}
 		}
 		if ss.SirTask == 3 {
@@ -2017,10 +2018,10 @@ func (ss *Sim) RunTestAll(add_fnm string) {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+				path = "/oscar/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 			}
 		}
 		if ss.SirTask == 4 {
@@ -2028,10 +2029,10 @@ func (ss *Sim) RunTestAll(add_fnm string) {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
+				path = "/oscar/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + ".csv"
 			}
 		}
 	} else {
@@ -2040,10 +2041,10 @@ func (ss *Sim) RunTestAll(add_fnm string) {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_mew/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_mew/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv"
+				path = "/oscar/data/frankmj/asoni4/sir2_new/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + ".csv"
 			}
 		}
 		if ss.SirTask == 3 {
@@ -2051,10 +2052,10 @@ func (ss *Sim) RunTestAll(add_fnm string) {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + ".csv"
+				path = "/oscar/data/frankmj/asoni4/sir3/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + ".csv"
 			}
 		}
 
@@ -2063,10 +2064,10 @@ func (ss *Sim) RunTestAll(add_fnm string) {
 				path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder
 				fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
 			} else if ss.RunLocation == "cluster" {
-				path = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder
-				fnm = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
-				//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
-				//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + ".csv"
+				path = "/oscar/data/frankmj/asoni4/sir4/results/" + ss.Folder
+				fnm = "/oscar/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + add_fnm + ".csv"
+				//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
+				//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + ".csv"
 			}
 		}
 	}
@@ -2330,6 +2331,7 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	inp := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
 	pfc := ss.Net.LayerByName("PFCmntD").(leabra.LeabraLayer).AsLeabra()
+	pfcoutd := ss.Net.LayerByName("PFCoutD").(leabra.LeabraLayer).AsLeabra()
 
 	//pc := popcode.OneD{}//previously defined pc does not work here //no ring
 	//pc.Defaults() //no ring
@@ -2394,6 +2396,13 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 		dt.SetCellFloat(stnm, row, float64(pfcdecode))
 	}
 
+	pfc.UnitVals(&ss.TmpValsPFCout, "Act")
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		pfcdecode := pc.Decode(ss.TmpValsPFCout[stripe*ss.LayerSize : (stripe+1)*ss.LayerSize])
+		stnm := "outstripe" + string(stripe)
+		dt.SetCellFloat(stnm, row, float64(pfcdecode))
+	}
+
 	dt.SetCellString("Lesion", row, ss.Lesion)
 	dt.SetCellFloat("LesionProp", row, ss.LesionProp)
 	dt.SetCellString("LesionApplied", row, ss.LesionApplied)
@@ -2438,6 +2447,10 @@ func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
 	for stripe := 0; stripe < ss.Stripes; stripe++ {
 		stnm := "stripe" + string(stripe)
 		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
+	}
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		stnm := "outstripe" + string(stripe)
+		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcoutdecode value to table
 	}
 	if ss.chunklay == true {
 		sch = append(sch, etable.Schema{{"ChunkDecode", etensor.FLOAT64, nil, nil}}...) //adds chunk value to table
@@ -2554,6 +2567,12 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		stnm := "stripe" + string(stripe)
 		dt.SetCellFloat(stnm, row, float64(pfcdecode))
 	}
+	pfc.UnitVals(&ss.TmpValsPFCout, "Act")
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		pfcdecode := pc.Decode(ss.TmpValsPFCout[stripe*ss.LayerSize : (stripe+1)*ss.LayerSize])
+		stnm := "outstripe" + string(stripe)
+		dt.SetCellFloat(stnm, row, float64(pfcdecode))
+	}
 
 	dt.SetCellString("Lesion", row, ss.Lesion)
 	dt.SetCellFloat("LesionProp", row, ss.LesionProp)
@@ -2598,6 +2617,10 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 
 	for stripe := 0; stripe < ss.Stripes; stripe++ {
 		stnm := "stripe" + string(stripe)
+		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
+	}
+	for stripe := 0; stripe < ss.Stripes; stripe++ {
+		stnm := "outstripe" + string(stripe)
 		sch = append(sch, etable.Column{stnm, etensor.FLOAT64, nil, nil}) //adds pfcdecode value to table
 	}
 	if ss.chunklay == true {
@@ -3571,10 +3594,10 @@ func (ss *Sim) CmdArgs() {
 					path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder
 					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				} else if ss.RunLocation == "cluster" {
-					path = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder
-					fnm = "/gpfs/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-					//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder
-					//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					path = "/oscar/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder
+					fnm = "/oscar/data/frankmj/asoni4/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder
+					//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				}
 			}
 			if ss.SirTask == 3 {
@@ -3582,10 +3605,10 @@ func (ss *Sim) CmdArgs() {
 					path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder
 					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				} else if ss.RunLocation == "cluster" {
-					path = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder
-					fnm = "/gpfs/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-					//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder
-					//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					path = "/oscar/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder
+					fnm = "/oscar/data/frankmj/asoni4/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder
+					//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				}
 			}
 			if ss.SirTask == 4 {
@@ -3593,10 +3616,10 @@ func (ss *Sim) CmdArgs() {
 					path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder
 					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				} else if ss.RunLocation == "cluster" {
-					path = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder
-					fnm = "/gpfs/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-					//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
-					//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					path = "/oscar/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder
+					fnm = "/oscar/data/frankmj/asoni4/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder
+					//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4_chunk/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				}
 			}
 		} else {
@@ -3605,10 +3628,10 @@ func (ss *Sim) CmdArgs() {
 					path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder
 					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				} else if ss.RunLocation == "cluster" {
-					path = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder
-					fnm = "/gpfs/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-					//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder
-					//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					path = "/oscar/data/frankmj/asoni4/sir2_new/results/" + ss.Folder
+					fnm = "/oscar/data/frankmj/asoni4/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder
+					//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir2_new/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				}
 			}
 			if ss.SirTask == 3 {
@@ -3616,10 +3639,10 @@ func (ss *Sim) CmdArgs() {
 					path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder
 					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				} else if ss.RunLocation == "cluster" {
-					path = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder
-					fnm = "/gpfs/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-					//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
-					//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					path = "/oscar/data/frankmj/asoni4/sir3/results/" + ss.Folder
+					fnm = "/oscar/data/frankmj/asoni4/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder
+					//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir3/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				}
 			}
 			if ss.SirTask == 4 {
@@ -3627,10 +3650,10 @@ func (ss *Sim) CmdArgs() {
 					path = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder
 					fnm = "C:/Users/Aneri/go/src/leabra/examples/sir_proj/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				} else if ss.RunLocation == "cluster" {
-					path = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder
-					fnm = "/gpfs/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
-					//path = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
-					//fnm = "/gpfs/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					path = "/oscar/data/frankmj/asoni4/sir4/results/" + ss.Folder
+					fnm = "/oscar/data/frankmj/asoni4/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
+					//path = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder
+					//fnm = "/oscar/home/asoni4/leabra/examples/workingmemory/sir4/results/" + ss.Folder + ss.RunName() + "EpcLog.csv"
 				}
 			}
 

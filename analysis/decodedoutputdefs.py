@@ -330,6 +330,22 @@ class Precision():
                     use_decodeout_recall.append(decodeout_recall.values[i])
             self.num_nonresponse = num_nonresponse
             self.total_length = len(use_decodeout_recall)
+        elif nonresponse == 'remove':
+            num_nonresponse = 0
+            use_decodeout = []
+            use_target = []
+            use_decodeout_recall = []
+            use_target_recall = []
+            for i in range(len(decodeout)):
+                if decodeout.values[i] != 0:
+                    use_decodeout.append(decodeout.values[i])
+                    use_target.append(target.values[i])
+            for i in range(len(decodeout_recall)):
+                if decodeout_recall.values[i] == 0:
+                    num_nonresponse+=1
+                else:
+                    use_decodeout_recall.append(decodeout_recall.values[i])
+                    use_target_recall.append(target_recall.values[i])
         elif nonresponse == 'swap':
             num_nonresponse = 0
             stripes = [i for i in df.keys() if 'stripe' in i] #find the stripe names
@@ -372,10 +388,16 @@ class Precision():
             
 
         stim_diff = (self.stim[1]-self.stim[0])/2
-        diff =np.array(use_decodeout)-np.array(target)
+        if nonresponse == 'remove':
+            diff =np.array(use_decodeout)-np.array(use_target)
+        else:
+            diff =np.array(use_decodeout)-np.array(target)
         self.alldiff = diff
         
-        diffrecall =np.array(use_decodeout_recall)-np.array(target_recall)
+        if nonresponse == 'remove':
+            diffrecall =np.array(use_decodeout_recall)-np.array(use_target_recall)
+        else:
+            diffrecall =np.array(use_decodeout_recall)-np.array(target_recall)
         #diffrecall = np.abs(diffrecall) #this is wrong wrong wrong....uncomment this (comment out the below line) and plot for reason why. 
         #diffrecall = (np.mod(diffrecall+stim_diff/2, stim_diff)-stim_diff/2) #correct version, wrong mod factor
         diffrecall = (np.mod(diffrecall+stim_diff, self.stim[1])-stim_diff)
