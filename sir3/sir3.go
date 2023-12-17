@@ -144,7 +144,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".MatrixPrjn", Desc: "Matrix learning",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":         "0.04", // .04 > .1 > .02
+					"Prjn.Learn.Lrate":         "0.06", // .04 > .1 > .02
 					"Prjn.WtInit.Var":          "0.1",
 					"Prjn.Trace.GateNoGoPosLR": "0.1",  // 0.1 default //was 1.0
 					"Prjn.Trace.NotGatedLR":    "0.7",  // 0.7 default
