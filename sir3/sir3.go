@@ -144,7 +144,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".MatrixPrjn", Desc: "Matrix learning",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":         "0.06", // .04 > .1 > .02
+					"Prjn.Learn.Lrate":         "0.04", // .04 > .1 > .02
 					"Prjn.WtInit.Var":          "0.1",
 					"Prjn.Trace.GateNoGoPosLR": "0.1",  // 0.1 default //was 1.0
 					"Prjn.Trace.NotGatedLR":    "0.7",  // 0.7 default
@@ -328,6 +328,10 @@ type Sim struct {
 	TmpValsPFCout []float32 `view:"-" desc:"for holding decoded layer values"`
 	TmpValsGpi    []float32 `view:"-" desc:"for holding decoded layer values"`
 
+	MTGFmCInputWts  etensor.Tensor `view:"no-inline" desc:"weights from control input to matrix go layer"`
+	MTNGFmCInputWts etensor.Tensor `view:"no-inline" desc:"weights from control input to matrix nogo layer"`
+	TempWts         etensor.Tensor `view:"no-inline" desc:"weights from control input to matrix nogo layer"`
+
 	PFCmntD1Val []float32 `view:"-" desc:"for pfcmntD stripe 1 (bottom) values"`
 	PFCmntD2Val []float32 `view:"-" desc:"for pfcmntD stripe 2 (top) values"`
 
@@ -406,7 +410,8 @@ type Sim struct {
 	Win          *gi.Window                  `view:"-" desc:"main GUI window"`
 	NetView      *netview.NetView            `view:"-" desc:"the network viewer"`
 	ToolBar      *gi.ToolBar                 `view:"-" desc:"the master toolbar"`
-	WtsGrid      *etview.TensorGrid          `view:"-" desc:"the weights grid view"`
+	WtsGridG     *etview.TensorGrid          `view:"-" desc:"the weights grid view, go"`
+	WtsGridNG    *etview.TensorGrid          `view:"-" desc:"the weights grid view, no go "`
 	TrnEpcPlot   *eplot.Plot2D               `view:"-" desc:"the training epoch plot"`
 	TstEpcPlot   *eplot.Plot2D               `view:"-" desc:"the testing epoch plot"`
 	TstTrlPlot   *eplot.Plot2D               `view:"-" desc:"the test-trial plot"`
@@ -441,6 +446,9 @@ func (ss *Sim) New() {
 	ss.TstEpcLog = &etable.Table{}
 	ss.TstTrlLog = &etable.Table{}
 	ss.TrnTrlLog = &etable.Table{}
+	ss.MTGFmCInputWts = &etensor.Float32{}
+	ss.MTNGFmCInputWts = &etensor.Float32{}
+	ss.TempWts = &etensor.Float32{}
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.SimMat = &simat.SimMat{}
@@ -584,7 +592,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no"
 
 	ss.LayerSize = 20
-	ss.Stripes = 8
+	ss.Stripes = 2
 
 	ss.StimStripe = make([][]float64, ss.Stripes)
 	for i := range ss.StimStripe {
@@ -706,6 +714,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 
 	pj := net.ConnectLayersPrjn(ctrl, mtxGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
+
 	pj = net.ConnectLayersPrjn(ctrl, mtxNoGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
 
@@ -2207,6 +2216,116 @@ func (ss *Sim) LogFileName(lognm string) string {
 	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".csv"
 }
 
+func (ss *Sim) MTGFmCInput(dt etensor.Tensor) {
+	// col := dt.(*etensor.Float32)
+	// vals := col.Values
+	// inp := ss.Net.LayerByName("CtrlInput").(leabra.LeabraLayer).AsLeabra()
+	// isz := inp.Shape().Len()
+	// hid := ss.Net.LayerByName("MatrixGo").(leabra.LeabraLayer).AsLeabra()
+	// ysz := hid.Shape().Dim(0)
+	// xsz := hid.Shape().Dim(1)
+	// for y := 0; y < ysz; y++ {
+	// 	for x := 0; x < xsz; x++ {
+	// 		ui := (y*xsz + x)
+	// 		ust := ui * isz
+	// 		vls := vals[ust : ust+isz]
+	// 		inp.SendPrjnVals(&vls, "Wt", hid, ui, "")
+	// 	}
+	// }
+	inp := ss.Net.LayerByName("CtrlInput").(leabra.LeabraLayer).AsLeabra()
+	hid := ss.Net.LayerByName("MatrixGo").(leabra.LeabraLayer).AsLeabra()
+	isz := inp.Shape().Len()
+	ss.ConfigTempWts(ss.TempWts)
+	coltemp := ss.TempWts.(*etensor.Float32)
+	valstemp := coltemp.Values
+	vlstemp := valstemp[0 : ss.Acts*ss.Stripes*2]
+	for i := 0; i < isz; i++ {
+		hid.RecvPrjnVals(&vlstemp, "Wt", inp, i, "")
+		place := []int{0, 0, 0, 0} //the shape is (1,6,2,2)
+		pmax := ss.Stripes * 2
+		for p := 0; p < pmax; p++ {
+			if p == 0 {
+				place = []int{0, i, 0, 0}
+			}
+			if p == 1 {
+				place = []int{0, i, 0, 1}
+			}
+			if p == 2 {
+				place = []int{0, i, 1, 0}
+			}
+			if p == 3 {
+				place = []int{0, i, 1, 1}
+			}
+			ss.MTGFmCInputWts.SetFloat(place, float64(vlstemp[i+ss.Acts*p]))
+		}
+	}
+}
+
+func (ss *Sim) ConfigTempWts(dt etensor.Tensor) {
+	dt.SetShape([]int{1, ss.Acts * ss.Stripes * 2}, nil, nil)
+}
+
+func (ss *Sim) MTNGFmCInput(dt etensor.Tensor) {
+	// col := dt.(*etensor.Float32)
+	// vals := col.Values
+
+	// //isz := inp.Shape().Len()
+	// isz := 4
+	// hid := ss.Net.LayerByName("MatrixNoGo").(leabra.LeabraLayer).AsLeabra()
+	// inp := ss.Net.LayerByName("CtrlInput").(leabra.LeabraLayer).AsLeabra()
+	// ysz := inp.Shape().Dim(0)
+	// xsz := inp.Shape().Dim(1)
+	// //ysz := hid.Shape().Dim(0)
+	// //xsz := hid.Shape().Dim(1)
+	// ////zsz := hid.Shape().Dim(3)
+	// for y := 0; y < ysz; y++ {
+	// 	for x := 0; x < xsz; x++ {
+	// 		fmt.Print(x)
+	// 		fmt.Print(y)
+	// 		ui := (y*xsz + x)
+	// 		ust := ui * isz
+	// 		vls := vals[ust : ust+isz]
+	// 		fmt.Print(ui)
+	// 		fmt.Print(ust)
+	// 		//fmt.Print(vals)
+	// 		//inp.SendPrjnVals(&vls, "Wt", hid, ui, "")
+	// 		hid.RecvPrjnVals(&vls, "Wt", inp, ui, "")
+
+	// 		fmt.Print(vals)
+
+	// 	}
+	// }
+
+	inp := ss.Net.LayerByName("CtrlInput").(leabra.LeabraLayer).AsLeabra()
+	hid := ss.Net.LayerByName("MatrixNoGo").(leabra.LeabraLayer).AsLeabra()
+	isz := inp.Shape().Len()
+	ss.ConfigTempWts(ss.TempWts)
+	coltemp := ss.TempWts.(*etensor.Float32)
+	valstemp := coltemp.Values
+	vlstemp := valstemp[0 : ss.Acts*ss.Stripes*2]
+	for i := 0; i < isz; i++ {
+		hid.RecvPrjnVals(&vlstemp, "Wt", inp, i, "")
+		place := []int{0, 0, 0, 0} //the shape is (1,ss.Acts,2,2)
+		pmax := ss.Stripes * 2
+		for p := 0; p < pmax; p++ {
+			if p == 0 {
+				place = []int{0, i, 0, 0}
+			}
+			if p == 1 {
+				place = []int{0, i, 0, 1}
+			}
+			if p == 2 {
+				place = []int{0, i, 1, 0}
+			}
+			if p == 3 {
+				place = []int{0, i, 1, 1}
+			}
+			ss.MTNGFmCInputWts.SetFloat(place, float64(vlstemp[i+ss.Acts*p]))
+		}
+	}
+
+}
+
 //////////////////////////////////////////////
 //  TrnEpcLog
 
@@ -2218,6 +2337,16 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	epc := ss.TrainEnv.Epoch.Prv         // this is triggered by increment so use previous value
 	nt := float64(ss.TrainEnv.Trial.Max) // number of trials in view
+
+	ss.MTGFmCInput(ss.MTGFmCInputWts)
+	ss.MTNGFmCInput(ss.MTNGFmCInputWts)
+	if ss.WtsGridG != nil {
+		ss.WtsGridG.UpdateSig()
+	}
+
+	if ss.WtsGridNG != nil {
+		ss.WtsGridNG.UpdateSig()
+	}
 
 	ss.EpcDA = ss.SumDA / nt
 	ss.SumDA = 0
@@ -2265,6 +2394,8 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("AbsDA", row, ss.EpcAbsDA)
 	dt.SetCellFloat("RewPred", row, ss.EpcRewPred)
 	dt.SetCellFloat("PerTrlMSec", row, ss.EpcPerTrlMSec)
+	dt.SetCellTensor("MTGFmCInputWts", row, ss.MTGFmCInputWts)
+	dt.SetCellTensor("MTNGFmCInputWts", row, ss.MTNGFmCInputWts)
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TrnEpcPlot.GoUpdate()
@@ -2274,6 +2405,12 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		}
 		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
 	}
+}
+func (ss *Sim) ConfigMTGFmCInput(dt etensor.Tensor) {
+	dt.SetShape([]int{1, ss.Acts, ss.Stripes, 2}, nil, nil)
+}
+func (ss *Sim) ConfigMTNGFmCInput(dt etensor.Tensor) {
+	dt.SetShape([]int{1, ss.Acts, ss.Stripes, 2}, nil, nil)
 }
 
 func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
@@ -2295,8 +2432,12 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"AbsDA", etensor.FLOAT64, nil, nil},
 		{"RewPred", etensor.FLOAT64, nil, nil},
 		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
+		{"MTGFmCInputWts", etensor.FLOAT32, []int{1, ss.Acts, ss.Stripes, 2}, nil},
+		{"MTNGFmCInputWts", etensor.FLOAT32, []int{1, ss.Acts, ss.Stripes, 2}, nil},
 	}
 	dt.SetFromSchema(sch, 0)
+	ss.ConfigMTGFmCInput(ss.MTGFmCInputWts)
+	ss.ConfigMTNGFmCInput(ss.MTNGFmCInputWts)
 }
 
 func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
@@ -2316,6 +2457,8 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("AbsDA", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("RewPred", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("PerTrlMSec", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("MTGFmCInputWts", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("MTNGFmCInputWts", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 
 	return plt
 }
@@ -2845,6 +2988,16 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	plt := tv.AddNewTab(eplot.KiT_Plot2D, "TrnEpcPlot").(*eplot.Plot2D)
 	ss.TrnEpcPlot = ss.ConfigTrnEpcPlot(plt, ss.TrnEpcLog)
+
+	tg := tv.AddNewTab(etview.KiT_TensorGrid, "MTGWeights").(*etview.TensorGrid)
+	tg.SetStretchMax()
+	ss.WtsGridG = tg
+	tg.SetTensor(ss.MTGFmCInputWts)
+
+	tg2 := tv.AddNewTab(etview.KiT_TensorGrid, "MTNGWeights").(*etview.TensorGrid)
+	tg2.SetStretchMax()
+	ss.WtsGridNG = tg2
+	tg2.SetTensor(ss.MTNGFmCInputWts)
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstTrlPlot").(*eplot.Plot2D)
 	ss.TstTrlPlot = ss.ConfigTstTrlPlot(plt, ss.TstTrlLog)
