@@ -592,7 +592,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.LesionApplied = "no"
 
 	ss.LayerSize = 20
-	ss.Stripes = 4
+	ss.Stripes = 2
 
 	ss.StimStripe = make([][]float64, ss.Stripes)
 	for i := range ss.StimStripe {
